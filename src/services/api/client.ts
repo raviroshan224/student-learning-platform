@@ -48,6 +48,13 @@ client.interceptors.response.use(
       !original._retry &&
       !original.url?.includes("/auth/refresh")
     ) {
+      // If the user was never authenticated, don't redirect to login — just
+      // let react-query surface the error so public pages can handle it.
+      const { useAuthStore } = require("@/stores/auth.store");
+      if (!useAuthStore.getState().accessToken) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });

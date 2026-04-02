@@ -568,10 +568,13 @@ export default function CourseDetailPage() {
   const [loadedTabs, setLoadedTabs] = useState<Set<number>>(new Set([0]));
   const [descExpanded, setDescExpanded] = useState(false);
 
-  // Course detail
+  // Course detail — backend wraps response in { data: {...} }, unwrap it
   const { data: detailRaw, isLoading: detailLoading } = useQuery({
     queryKey: ["course-detail", courseId],
-    queryFn: () => CoursesService.detail(courseId).then((r) => r.data),
+    queryFn: () => CoursesService.detail(courseId).then((r) => {
+      const body = r.data as any;
+      return (body?.data ?? body) as CourseDetailsResponse;
+    }),
     retry: false,
   });
   const detail = detailRaw as CourseDetailsResponse | null | undefined;

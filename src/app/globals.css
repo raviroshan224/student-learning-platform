@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  /* ScholarGyan brand */
-  --primary: #1C3B5A;
-  --secondary: #2A5D9F;
-  --accent: #3D7CC9;
-  --heading: #1A324D;
-  --text: #4A5B6E;
-  --scaffold-bg: #F0F4F8;
+  /* Scholars Gyan Academy brand — forest green */
+  --primary: #1F6B1F;
+  --secondary: #2A8A2A;
+  --accent: #3DAF3D;
+  --heading: #2D3B18;
+  --text: #4A5B3E;
+  --scaffold-bg: #F5FAF5;
   --surface: #FFFFFF;
-  --border: #D8E1E9;
+  --border: #D0E8D0;
   --success: #2E7D32;
   --error: #D32F2F;
   --warning: #F9A825;
 
-  /* Gray scale */
-  --gray-900: #1A2632;
-  --gray-700: #3D4D5C;
-  --gray-600: #556575;
-  --gray-400: #A3AEB9;
-  --gray-200: #E2E8ED;
-  --gray-100: #F0F4F8;
+  /* Gray scale (green-tinted) */
+  --gray-900: #1A2618;
+  --gray-700: #3D4D38;
+  --gray-600: #556550;
+  --gray-400: #A3AE9B;
+  --gray-200: #E2EEE2;
+  --gray-100: #F5FAF5;
 
   /* Radius */
   --radius-sm: 8px;
@@ -29,34 +29,34 @@
   --radius: 8px;
 
   /* Shadows */
-  --shadow: 0 2px 8px rgba(28,59,90,0.10);
-  --shadow-lg: 0 8px 24px rgba(28,59,90,0.15);
+  --shadow: 0 2px 8px rgba(31,107,31,0.10);
+  --shadow-lg: 0 8px 24px rgba(31,107,31,0.15);
 
   /* Semantic aliases used in existing code */
-  --color-primary-50: #eef4fb;
-  --color-primary-100: #d4e3f4;
-  --color-primary-200: #a9c7e9;
-  --color-primary-300: #7eabde;
-  --color-primary-400: #538fd3;
-  --color-primary-500: #2A5D9F;
-  --color-primary-600: #1C3B5A;
-  --color-primary-700: #162d45;
-  --color-primary-800: #102030;
-  --color-primary-900: #0a121b;
+  --color-primary-50: #f0faf0;
+  --color-primary-100: #d4f0d4;
+  --color-primary-200: #a9e1a9;
+  --color-primary-300: #7ed27e;
+  --color-primary-400: #53c353;
+  --color-primary-500: #2A8A2A;
+  --color-primary-600: #1F6B1F;
+  --color-primary-700: #185218;
+  --color-primary-800: #113811;
+  --color-primary-900: #0a1e0a;
 
   --color-success: #2E7D32;
   --color-warning: #F9A825;
   --color-danger: #D32F2F;
-  --color-info: #3D7CC9;
+  --color-info: #3DAF3D;
 
-  --background: #F0F4F8;
-  --foreground: #1A324D;
+  --background: #F5FAF5;
+  --foreground: #2D3B18;
   --card: #FFFFFF;
-  --card-foreground: #1A2632;
-  --muted: #E2E8ED;
-  --muted-foreground: #556575;
-  --input: #D8E1E9;
-  --ring: #3D7CC9;
+  --card-foreground: #1A2618;
+  --muted: #E2EEE2;
+  --muted-foreground: #556550;
+  --input: #D0E8D0;
+  --ring: #2A8A2A;
 
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 72px;
@@ -75,6 +75,7 @@
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: #ffffff;
+  --color-accent: var(--accent);
   --color-success: var(--color-success);
   --color-warning: var(--color-warning);
   --color-danger: var(--color-danger);
@@ -98,7 +99,7 @@ body {
 
 /* Gradient button utility */
 .btn-gradient {
-  background: linear-gradient(to right, #1C3B5A, #2A5D9F);
+  background: linear-gradient(to right, #1F6B1F, #2A8A2A);
   color: white;
 }
 
