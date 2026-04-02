@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://scholargyan.onecloudlab.com/api/v1/enrollments/free-course\")",
+      "Bash(curl -s https://scholargyan.onecloudlab.com/api/v1)",
+      "Bash(curl -s https://scholargyan.onecloudlab.com/api/docs)",
+      "Bash(curl -s https://scholargyan.onecloudlab.com/swagger)",
+      "Bash(grep -r turbopack C:/Users/shiwa/student-learning-platform/node_modules/next/dist/docs/ --include=*.md -l)",
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); print\\(data[0][''''text'''']\\)\")",
+      "Bash(python -c \"import json,sys; data=json.load\\(sys.stdin\\); print\\(data[0][''''text'''']\\)\")",
+      "Bash(ls:*)",
+      "Bash(find \"C:\\\\Users\\\\shiwa\\\\student-learning-platform/src/app/\\(main\\)\" -type d)"
+    ]
+  }
+}

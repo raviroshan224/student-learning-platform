@@ -1,0 +1,41 @@
+import client from './client';
+import type { CourseModel, SubjectModel, LectureModel, LecturerModel, CourseMaterialModel, MockTestModel, CourseDetailsResponse } from '@/types/models/course';
+
+export const CoursesService = {
+  list: (params?: { page?: number; limit?: number; search?: string; categoryId?: string }) =>
+    client.get<{ data: CourseModel[]; meta: any }>('/courses', { params }),
+
+  detail: (id: string) =>
+    client.get<CourseDetailsResponse>(`/courses/${id}/details`),
+
+  categories: () =>
+    client.get<any[]>('/courses/categories'),
+
+  save: (id: string) => client.post(`/courses/${id}/save`),
+  unsave: (id: string) => client.delete(`/courses/${id}/save`),
+  savedMine: () => client.get<CourseModel[]>('/courses/saved/mine'),
+
+  subjects: (courseId: string) =>
+    client.get<SubjectModel[]>(`/subjects/by-course/${courseId}`),
+
+  lecturesBySubject: (subjectId: string) =>
+    client.get<LectureModel[]>(`/lectures/by-subject/${subjectId}`),
+
+  watchLecture: (lectureId: string) =>
+    client.post<{ url: string }>(`/lectures/${lectureId}/watch`),
+
+  completeLecture: (lectureId: string) =>
+    client.post(`/lectures/${lectureId}/complete`),
+
+  lecturers: (courseId: string) =>
+    client.get<LecturerModel[]>(`/lecturers/by-course/${courseId}`),
+
+  materials: (courseId: string) =>
+    client.get<CourseMaterialModel[]>(`/course-materials/by-course/${courseId}`),
+
+  downloadMaterial: (id: string) =>
+    client.post<{ url: string }>(`/course-materials/${id}/download`),
+
+  mockTests: (courseId: string) =>
+    client.get<MockTestModel[]>(`/mock-tests/by-course/${courseId}/with-attempts`),
+};
