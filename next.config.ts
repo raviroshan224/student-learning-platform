@@ -15,6 +15,17 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  // COOP/COEP headers enable SharedArrayBuffer — required for Zoom Video SDK
+  // high-quality audio/video rendering.
+  headers: async () => [
+    {
+      source: "/(.*)",
+      headers: [
+        { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+      ],
+    },
+  ],
   images: {
     // Images are served from S3/CDN — skip Next.js optimization to avoid
     // server-side download timeouts (504) and serve the original URLs directly.
