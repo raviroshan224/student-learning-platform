@@ -95,9 +95,9 @@ function SyllabusTab({ subjects }: { subjects: SubjectModel[] }) {
                 )}
                 {chapters.length > 0 ? (
                   <div className="divide-y divide-[var(--border)]">
-                    {chapters.map((ch) => (
+                    {chapters.map((ch, chIdx) => (
                       <button
-                        key={ch.id}
+                        key={ch.id ?? `ch-${chIdx}`}
                         onClick={() => setChapterSheet(ch)}
                         className="flex items-center gap-3 w-full px-4 py-2.5 bg-[var(--background)] hover:bg-[var(--muted)] transition-colors text-left"
                       >
@@ -568,12 +568,20 @@ export default function CourseDetailPage() {
   const [loadedTabs, setLoadedTabs] = useState<Set<number>>(new Set([0]));
   const [descExpanded, setDescExpanded] = useState(false);
 
-  // Course detail — backend wraps response in { data: {...} }, unwrap it
+  // Course detail — unwrap { data: {...} } or { course: {...} } wrapper,
+  // then normalise field-name variations the backend may return.
   const { data: detailRaw, isLoading: detailLoading } = useQuery({
     queryKey: ["course-detail", courseId],
     queryFn: () => CoursesService.detail(courseId).then((r) => {
       const body = r.data as any;
-      return (body?.data ?? body) as CourseDetailsResponse;
+      const raw = body?.data ?? body?.course ?? body;
+      return {
+        ...raw,
+        courseDescription: raw.courseDescription ?? raw.description,
+        courseImageUrl:    raw.courseImageUrl    ?? raw.imageUrl ?? raw.thumbnailUrl ?? raw.courseImage,
+        durationHours:     raw.durationHours     ?? raw.duration,
+        validityDays:      raw.validityDays      ?? raw.validity,
+      } as CourseDetailsResponse;
     }),
     retry: false,
   });
@@ -601,7 +609,7 @@ export default function CourseDetailPage() {
   const enrollCTA = getEnrollCTA(detail ?? null);
 
   const course = detail as any;
-  const coverImg = resolveImageUrl(course?.courseImageUrl);
+  const coverImg = resolveImageUrl(course?.courseImageUrl ?? course?.courseIconUrl);
   const hasOffer = normalizeHasOffer(course?.hasOffer);
   const displayPrice = hasOffer && course?.discountedPrice != null
     ? course.discountedPrice : course?.enrollmentCost ?? 0;

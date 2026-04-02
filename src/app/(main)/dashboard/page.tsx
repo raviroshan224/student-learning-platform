@@ -470,7 +470,7 @@ export default function DashboardPage() {
                 {/* Exam image or icon */}
                 <div className="shrink-0 h-16 w-16 rounded-[var(--radius-md)] overflow-hidden bg-white/15 flex items-center justify-center">
                   {examImg ? (
-                    <Image src={examImg} alt={upcomingExam.title} width={64} height={64} className="object-cover" style={{ height: "auto" }} />
+                    <Image src={examImg} alt={upcomingExam.title} width={64} height={64} className="object-cover" />
                   ) : (
                     <Award className="h-8 w-8 text-white" />
                   )}

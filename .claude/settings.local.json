@@ -12,7 +12,8 @@
       "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); print\\(data[0][''''text'''']\\)\")",
       "Bash(python -c \"import json,sys; data=json.load\\(sys.stdin\\); print\\(data[0][''''text'''']\\)\")",
       "Bash(ls:*)",
-      "Bash(find \"C:\\\\Users\\\\shiwa\\\\student-learning-platform/src/app/\\(main\\)\" -type d)"
+      "Bash(find \"C:\\\\Users\\\\shiwa\\\\student-learning-platform/src/app/\\(main\\)\" -type d)",
+      "Bash(cmd:*)"
     ]
   }
 }

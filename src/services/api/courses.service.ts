@@ -9,17 +9,17 @@ export const CoursesService = {
     client.get<CourseDetailsResponse>(`/courses/${id}/details`),
 
   categories: () =>
-    client.get<any[]>('/courses/categories'),
+    client.get<any[]>('/categories'),
 
   save: (id: string) => client.post(`/courses/${id}/save`),
   unsave: (id: string) => client.delete(`/courses/${id}/save`),
   savedMine: () => client.get<CourseModel[]>('/courses/saved/mine'),
 
   subjects: (courseId: string) =>
-    client.get<SubjectModel[]>(`/subjects/by-course/${courseId}`),
+    client.get<SubjectModel[]>(`/subjects/course/${courseId}`),
 
   lecturesBySubject: (subjectId: string) =>
-    client.get<LectureModel[]>(`/lectures/by-subject/${subjectId}`),
+    client.get<LectureModel[]>(`/lectures/subject/${subjectId}`),
 
   watchLecture: (lectureId: string) =>
     client.post<{ url: string }>(`/lectures/${lectureId}/watch`),
@@ -28,14 +28,14 @@ export const CoursesService = {
     client.post(`/lectures/${lectureId}/complete`),
 
   lecturers: (courseId: string) =>
-    client.get<LecturerModel[]>(`/lecturers/by-course/${courseId}`),
+    client.get<LecturerModel[]>(`/lecturers/course/${courseId}`),
 
   materials: (courseId: string) =>
-    client.get<CourseMaterialModel[]>(`/course-materials/by-course/${courseId}`),
+    client.get<CourseMaterialModel[]>(`/course-materials/course/${courseId}`),
 
   downloadMaterial: (id: string) =>
     client.post<{ url: string }>(`/course-materials/${id}/download`),
 
   mockTests: (courseId: string) =>
-    client.get<MockTestModel[]>(`/mock-tests/by-course/${courseId}/with-attempts`),
+    client.get<MockTestModel[]>(`/mock-tests/courses/${courseId}/with-attempts`),
 };
