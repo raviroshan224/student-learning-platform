@@ -58,8 +58,18 @@ export function computeLiveClassStatus(cls: {
   endTime?: string;
   scheduledAt?: string;
   durationMinutes?: number;
+  status?: string;
 }) {
   const now = new Date();
+  // Trust server-side status field first
+  const serverStatus = cls.status?.toLowerCase();
+  if (serverStatus === "ongoing" || serverStatus === "live" || serverStatus === "started" || serverStatus === "in_progress") {
+    return { isJoinable: true, isUpcoming: false, hasEnded: false, displayStatus: "Live now" };
+  }
+  if (serverStatus === "completed" || serverStatus === "ended" || serverStatus === "finished") {
+    return { isJoinable: false, isUpcoming: false, hasEnded: true, displayStatus: "Completed" };
+  }
+
   // Support both startTime/endTime and scheduledAt/durationMinutes
   const start = cls.startTime
     ? new Date(cls.startTime)

@@ -16,7 +16,7 @@ import { ROUTES } from "@/lib/constants/routes";
 import { CoursesService } from "@/services/api/courses.service";
 import { EnrollmentsService } from "@/services/api/enrollments.service";
 import { LiveService } from "@/services/api/live.service";
-import { PaymentsService } from "@/services/api/payments.service";
+import { useAuth } from "@/hooks/useAuth";
 import {
   resolveImageUrl, getCourseIsEnrolled, getEnrollCTA, getExpiryLabel,
   groupLecturesBySubject, formatDurationSeconds, computeLiveClassStatus,
@@ -364,28 +364,13 @@ function LecturesTab({ courseId, subjects, isEnrolled }: { courseId: string; sub
 
 // ─── Live Classes Tab ─────────────────────────────────────────────────────────
 function LiveClassesTab({ courseId }: { courseId: string }) {
-  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const router = useRouter();
   const { data: raw, isLoading } = useQuery({
     queryKey: ["live-classes-course", courseId],
     queryFn: () => LiveService.myClasses({ courseId, limit: 20 }).then((r) => extractArr(r.data)),
     staleTime: 1000 * 60,
   });
   const classes: any[] = raw ?? [];
-
-  async function handleJoin(lc: any) {
-    setJoiningId(lc.id);
-    try {
-      const res = await LiveService.joinToken(lc.id);
-      const url = (res.data as any)?.meetingUrl ?? lc.meetingUrl;
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("No meeting link available.");
-    } catch {
-      if (lc.meetingUrl) window.open(lc.meetingUrl, "_blank", "noopener,noreferrer");
-      else toast.error("Unable to join class.");
-    } finally {
-      setJoiningId(null);
-    }
-  }
 
   if (isLoading) return <TabSkeleton />;
   if (classes.length === 0) return <EmptyTab icon={<Radio />} message="No live classes for this course." />;
@@ -423,7 +408,7 @@ function LiveClassesTab({ courseId }: { courseId: string }) {
                 <p className="text-xs text-[var(--muted-foreground)]">{lc.lecturerName ?? lc.instructorName}</p>
               )}
               {isJoinable && (
-                <Button size="sm" className="w-full mt-1 gap-1" onClick={() => handleJoin(lc)} loading={joiningId === lc.id}>
+                <Button size="sm" className="w-full mt-1 gap-1" onClick={() => router.push(`/live/${lc.id}`)}>
                   <Radio className="h-3 w-3" /> Join Now
                 </Button>
               )}
@@ -563,6 +548,7 @@ export default function CourseDetailPage() {
   const courseId = params.courseId;
   const qc = useQueryClient();
   const router = useRouter();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [enrolling, setEnrolling] = useState(false);
   const [loadedTabs, setLoadedTabs] = useState<Set<number>>(new Set([0]));
@@ -634,17 +620,18 @@ export default function CourseDetailPage() {
     }
   }
 
-  async function handleEsewa() {
-    try {
-      const res = await PaymentsService.initiate({
-        courseId,
-        amount: displayPrice,
-        returnUrl: `${window.location.origin}/courses/${courseId}`,
-      });
-      window.location.href = (res.data as any).paymentUrl;
-    } catch {
-      toast.error("Payment initiation failed.");
+  function handleEsewa() {
+    const userId = (user as any)?.id;
+    if (!userId) {
+      toast.error("Please log in to enroll.");
+      return;
     }
+    const checkoutUrl = new URL("https://scholargyan.onecloudlab.com/payment/checkout");
+    checkoutUrl.searchParams.set("type", "course_enrollment");
+    checkoutUrl.searchParams.set("referenceId", courseId);
+    checkoutUrl.searchParams.set("userId", userId);
+    checkoutUrl.searchParams.set("returnUrl", `${window.location.origin}/courses/${courseId}`);
+    window.location.href = checkoutUrl.toString();
   }
 
   if (detailLoading) {
@@ -815,7 +802,7 @@ export default function CourseDetailPage() {
       </div>
 
       {/* Enroll CTA — sticky bottom */}
-      {enrollCTA !== "NONE" && (
+      {!isEnrolled && enrollCTA !== "NONE" && (
         <div className="fixed bottom-16 inset-x-0 z-40 bg-[var(--card)] border-t border-[var(--border)] shadow-lg px-4 py-3 flex items-center gap-3 rounded-tl-2xl rounded-tr-2xl">
           <div className="flex-1">
             <p className="text-xs text-[var(--muted-foreground)]">Enrollment Fee</p>
