@@ -231,7 +231,8 @@ function LecturesTab({ courseId, subjects, isEnrolled }: { courseId: string; sub
     setWatchingId(lecture.id);
     try {
       const res = await CoursesService.watchLecture(lecture.id);
-      const url = (res.data as any)?.url;
+      const body = res.data as any;
+      const url = body?.data?.videoUrl ?? body?.data?.url ?? body?.videoUrl ?? body?.url;
       router.push(ROUTES.COURSE_LEARN(courseId, lecture.id) + (url ? `?url=${encodeURIComponent(url)}` : ""));
     } catch {
       toast.error("Failed to load lecture.");

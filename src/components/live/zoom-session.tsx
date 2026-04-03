@@ -56,13 +56,7 @@ function avatarColor(userId: number) { return COLORS[Math.abs(userId) % COLORS.l
 function initials(name: string) { return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2); }
 function nowTime() { return new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}); }
 
-function gridCols(n: number) {
-  if (n <= 1) return "1fr";
-  if (n <= 2) return "repeat(2,1fr)";
-  if (n <= 4) return "repeat(2,1fr)";
-  if (n <= 9) return "repeat(3,1fr)";
-  return "repeat(4,1fr)";
-}
+// No dynamic gridCols needed anymore
 
 // ============================================================
 // === AVATAR BUBBLE ===
@@ -148,10 +142,11 @@ function TileOverlay({ name, muted, isHost, isYou }:
 // Each tile owns its VP container and manages attach/detach.
 // ============================================================
 
-function RemoteTile({ participant, stream, isSpeaking }: {
+function RemoteTile({ participant, stream, isSpeaking, onClick }: {
   participant: Participant;
   stream: any;
   isSpeaking: boolean;
+  onClick?: () => void;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const vpRef    = useRef<HTMLElement | null>(null);
@@ -200,11 +195,17 @@ function RemoteTile({ participant, stream, isSpeaking }: {
     : "none";
 
   return (
-    <div style={{
-      position:"relative", background:"#2d2d2d", borderRadius:8,
-      overflow:"hidden", minHeight:0, border, boxShadow:shadow,
-      transition:"border-color .2s, box-shadow .2s",
-    }}>
+    <div
+      onClick={onClick}
+      title={onClick ? "Click to pin" : undefined}
+      style={{
+        position:"relative", background:"#2d2d2d", borderRadius:8,
+        overflow:"hidden", minHeight:0, border, boxShadow:shadow,
+        transition:"border-color .2s, box-shadow .2s",
+        cursor: onClick ? "pointer" : "default",
+        width: "100%", height: "100%",
+      }}
+    >
       {/* VP container mount */}
       <div ref={mountRef} style={{ position:"absolute", inset:0 }}/>
 
@@ -228,61 +229,82 @@ function RemoteTile({ participant, stream, isSpeaking }: {
 
 // ============================================================
 // === SELF VIDEO TILE ===
-// CRITICAL: uses <video> element, NOT canvas.
-// muted + playsInline are mandatory.
+// Uses video-player-container + attachVideo(), same pattern as RemoteTile.
+// Mirror transform applied to VP container so self-view is flipped.
 // ============================================================
 
-function SelfTile({ name, isVideoOn, isMuted, isSpeaking, videoRef }: {
+function SelfTile({ name, isVideoOn, isMuted, isSpeaking, stream, localId, onClick }: {
   name: string;
   isVideoOn: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  stream: any;
+  localId: number | null;
+  onClick?: () => void;
 }) {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const vpRef    = useRef<HTMLElement | null>(null);
+
+  // Create ONE video-player-container per tile (mirrored for self-view)
+  useEffect(() => {
+    if (!mountRef.current) return;
+    const vp = document.createElement("video-player-container") as HTMLElement;
+    Object.assign(vp.style, {
+      display:"block", width:"100%", height:"100%",
+      transform:"scaleX(-1)", // mirror self-view like Zoom
+    });
+    mountRef.current.appendChild(vp);
+    vpRef.current = vp;
+    return () => { vp.remove(); vpRef.current = null; };
+  }, []);
+
+  // Attach / detach video using SDK's attachVideo — works on all browsers incl. Chromium
+  useEffect(() => {
+    const vp = vpRef.current;
+    if (!vp || !stream || localId === null) return;
+    if (isVideoOn) {
+      stream.attachVideo(localId, 2)
+        .then((el: HTMLElement) => {
+          Object.assign(el.style, {
+            width:"100%", height:"100%", objectFit:"cover", display:"block",
+          });
+          vp.appendChild(el);
+        })
+        .catch((e: any) => console.warn("[Zoom] self attachVideo:", e));
+    } else {
+      stream.detachVideo(localId)
+        .then((els: any) => {
+          (Array.isArray(els) ? els : [els]).forEach((e: any) => e?.remove());
+        })
+        .catch(() => {});
+    }
+  }, [isVideoOn, stream, localId]);
+
   const border = isSpeaking ? "2px solid #2be08a" : "2px solid transparent";
   const shadow = isSpeaking ? "0 0 0 1px #2be08a, 0 0 16px rgba(43,224,138,.22)" : "none";
 
   return (
-    <div style={{
-      position:"relative", background:"#2d2d2d", borderRadius:8,
-      overflow:"hidden", minHeight:0, border, boxShadow:shadow,
-      transition:"border-color .2s, box-shadow .2s",
-    }}>
-      {/*
-        SELF-VIEW VIDEO ELEMENT
-        ────────────────────────
-        • muted      — CRITICAL: prevents audio echo/feedback
-        • playsInline — CRITICAL: required on iOS, prevents fullscreen pop
-        • autoPlay   — starts as soon as srcObject is set
-        • transform: scaleX(-1) — mirror, matches Zoom's self-view feel
-        • visibility (not display:none) — display:none breaks rendering in some browsers
-      */}
-      <video
-        ref={videoRef as React.RefObject<HTMLVideoElement>}
-        autoPlay
-        muted
-        playsInline
-        style={{
-          position:"absolute", inset:0, width:"100%", height:"100%",
-          objectFit:"cover", display:"block",
-          transform:"scaleX(-1)",
-          visibility: isVideoOn ? "visible" : "hidden",
-        }}
-      />
-
-      {/* Camera-off placeholder */}
+    <div
+      onClick={onClick}
+      title={onClick ? "Click to pin" : undefined}
+      style={{
+        position:"relative", background:"#2d2d2d", borderRadius:8,
+        overflow:"hidden", minHeight:0, border, boxShadow:shadow,
+        transition:"border-color .2s, box-shadow .2s",
+        cursor: onClick ? "pointer" : "default",
+        width: "100%", height: "100%",
+      }}
+    >
+      <div ref={mountRef} style={{ position:"absolute", inset:0 }}/>
       {!isVideoOn && (
         <div style={{
           position:"absolute", inset:0, display:"flex", flexDirection:"column",
           alignItems:"center", justifyContent:"center", gap:10, background:"#2d2d2d",
         }}>
           <Avatar name={name} userId={0}/>
-          <span style={{ fontSize:12, color:"rgba(255,255,255,.45)", fontWeight:500 }}>
-            {name}
-          </span>
+          <span style={{ fontSize:12, color:"rgba(255,255,255,.45)", fontWeight:500 }}>{name}</span>
         </div>
       )}
-
       <TileOverlay name={name} muted={isMuted} isYou/>
     </div>
   );
@@ -450,7 +472,7 @@ function ParticipantsPanel({ participants, localId, onClose }: {
                 {p.muted ? "Muted" : "Unmuted"} · {p.bVideoOn ? "Camera on" : "Camera off"}
               </div>
             </div>
-            <div style={{ display:"flex", gap:5, flexShrink:0 }}>
+            <div style={{ display:"flex", gap:5, flexShrink:0, alignItems:"center" }}>
               <span style={{ fontSize:13, opacity: p.muted ? 0.2 : 1 }} title={p.muted?"Muted":"Unmuted"}>🎤</span>
               <span style={{ fontSize:13, opacity: p.bVideoOn ? 1 : 0.2 }} title={p.bVideoOn?"Camera on":"Camera off"}>📷</span>
             </div>
@@ -515,12 +537,12 @@ function TbBtn({ icon, label, onClick, active, danger, isLeave }: {
 
 export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessionProps) {
   // ── Refs ──────────────────────────────────────────────────────────────────
-  const clientRef     = useRef<any>(null);
-  const streamRef     = useRef<any>(null);
-  const selfVideoRef  = useRef<HTMLVideoElement | null>(null);   // <video> for self-view
-  const shareCanvasRef = useRef<HTMLCanvasElement | null>(null); // canvas for screen share view
-  const localIdRef    = useRef<number | null>(null);
-  const isChatOpenRef = useRef(false); // stale-closure-safe for event handlers
+  const clientRef      = useRef<any>(null);
+  const streamRef      = useRef<any>(null);
+  const shareCanvasRef = useRef<HTMLCanvasElement | null>(null); // canvas for share view (viewer side)
+  const sharePreviewRef = useRef<HTMLCanvasElement | null>(null); // off-screen canvas for startShareScreen (sharer side)
+  const localIdRef     = useRef<number | null>(null);
+  const isChatOpenRef  = useRef(false); // stale-closure-safe for event handlers
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [status,        setStatus]        = useState<Status>("connecting");
@@ -536,9 +558,39 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
   const [isPplOpen,     setIsPplOpen]     = useState(false);
   const [messages,      setMessages]      = useState<ChatMsg[]>([]);
   const [unread,        setUnread]        = useState(0);
+  const [viewMode,      setViewMode]      = useState<'grid'|'speaker'>("grid");
+  const [pinnedUserId,  setPinnedUserId]  = useState<number | null>(null);
+  const [isLocalHost,   setIsLocalHost]   = useState(false);
 
   // Keep ref in sync for event handlers
   useEffect(() => { isChatOpenRef.current = isChatOpen; }, [isChatOpen]);
+
+  // Off-screen canvas for startShareScreen — always available regardless of layout mode
+  useEffect(() => {
+    const c = document.createElement("canvas");
+    c.width = 1280; c.height = 720;
+    sharePreviewRef.current = c;
+    return () => { sharePreviewRef.current = null; };
+  }, []);
+
+  // ── BUG #2 FIX: startShareView after canvas is mounted in speaker view ──
+  useEffect(() => {
+    const s = streamRef.current;
+    if (!s) return;
+    if (sharingUserId !== null) {
+      if (sharingUserId === localIdRef.current) return;
+      const canvas = shareCanvasRef.current;
+      if (!canvas) return;
+      setTimeout(() => {
+        canvas.width  = canvas.parentElement?.clientWidth || 1280;
+        canvas.height = canvas.parentElement?.clientHeight || 720;
+        s.startShareView(canvas, sharingUserId)
+          .catch((e: any) => console.warn("[Zoom] startShareView:", e));
+      }, 100);
+    } else {
+      s.stopShareView().catch(() => {});
+    }
+  }, [sharingUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const addMsg = useCallback((m: Omit<ChatMsg,"id">) => {
@@ -585,6 +637,7 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
 
         const me = client.getCurrentUserInfo?.();
         localIdRef.current = me?.userId ?? null;
+        setIsLocalHost(me?.isHost === true);
 
         // Start audio (unmuted by default so student hears teacher)
         try { await stream.startAudio(); } catch (e: any) {
@@ -592,7 +645,7 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
         }
 
         // Populate initial participants list
-        const all: Participant[] = client.getAllUser?.() ?? [];
+        const all = (client.getAllUser?.() ?? []) as Participant[];
         setParticipants(all.filter(p => p.userId !== localIdRef.current));
 
         // System message
@@ -638,6 +691,11 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
           const removed: Participant[] = Array.isArray(payload) ? payload : [payload];
           const ids = new Set(removed.map(u => u.userId));
           setParticipants(prev => prev.filter(p => !ids.has(p.userId)));
+          // Auto-unpin if the pinned participant left
+          setPinnedUserId(prev => {
+            if (prev !== null && ids.has(prev)) { setViewMode('grid'); return null; }
+            return prev;
+          });
         });
 
         // ── EVENT: participant state update (mute, etc.) ──────────────────
@@ -652,20 +710,19 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
         });
 
         // ── EVENT: screen share ───────────────────────────────────────────
-        client.on("active-share-change", async (payload: any) => {
+        // Only set state here — startShareView/stopShareView are called in
+        // a useEffect so they run AFTER the canvas is mounted in the DOM.
+        client.on("active-share-change", (payload: any) => {
           if (payload.state === "Active") {
-            const canvas = shareCanvasRef.current;
-            if (canvas) {
-              const el = canvas.parentElement;
-              canvas.width  = el?.clientWidth  || 1280;
-              canvas.height = el?.clientHeight || 720;
-              try { await stream.startShareView(canvas, payload.userId); }
-              catch (e) { console.warn("[Zoom] startShareView:", e); }
-            }
             setSharingUserId(payload.userId);
           } else {
-            try { await stream.stopShareView(); } catch { /* ignore */ }
             setSharingUserId(null);
+            // If we were auto-switched to speaker for share, stay in speaker only
+            // if the user had explicitly pinned someone — otherwise revert to grid.
+            setPinnedUserId(prev => {
+              if (prev === null) setViewMode('grid');
+              return prev;
+            });
           }
         });
 
@@ -673,15 +730,25 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
         const chatClient = client.getChatClient?.();
         if (chatClient) {
           client.on("chat-on-message", (payload: any) => {
-            // Skip own messages (we add them locally in sendMsg)
-            if (payload.sender?.userId === localIdRef.current) return;
-            addMsg({
-              sender: payload.sender?.name ?? "Someone",
-              text:   payload.message ?? "",
-              time:   nowTime(),
-              isMe:   false,
+            setMessages(prev => {
+              const isDuplicate = prev.some(m => m.id === payload.id);
+              if (isDuplicate) return prev;
+              
+              const isMe = payload.sender?.userId === localIdRef.current;
+              const newMessage = {
+                id: payload.id,
+                sender: payload.sender?.name ?? "Someone",
+                text: payload.message ?? "",
+                time: nowTime(),
+                isMe: isMe,
+              };
+              
+              if (!isMe && !isChatOpenRef.current) {
+                setUnread(u => u + 1);
+              }
+              
+              return [...prev, newMessage];
             });
-            if (!isChatOpenRef.current) setUnread(u => u+1);
           });
         }
 
@@ -724,22 +791,11 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
   async function toggleCamera() {
     const s = streamRef.current;
     if (!s) return;
-
     if (!isVideoOn) {
       try {
-        /*
-         * SELF-VIEW FIX
-         * ─────────────────────────────────────────────────────────────────
-         * Pass the <video> element directly to startVideo().
-         * This tells the Zoom SDK to render self-view into a real <video>
-         * element instead of an internal canvas, which fixes the error:
-         *   "Rendering self-view on Chromium without SharedArrayBuffer
-         *    requires video tag"
-         * The <video> element MUST have muted + playsInline attributes.
-         */
-        const opts: any = {};
-        if (selfVideoRef.current) opts.videoElement = selfVideoRef.current;
-        await s.startVideo(opts);
+        // startVideo() with no options — SelfTile's useEffect calls attachVideo()
+        // when isVideoOn flips to true. This works on all browsers incl. Chromium.
+        await s.startVideo();
         setIsVideoOn(true);
       } catch (e: any) {
         console.warn("[Zoom] startVideo:", e?.type ?? e);
@@ -758,7 +814,9 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
       setIsSharing(false);
     } else {
       try {
-        await s.startShareScreen(shareCanvasRef.current);
+        // sharePreviewRef is an off-screen canvas (always available, always sized).
+        // Viewer-side rendering happens via startShareView in the shareView useEffect.
+        await s.startShareScreen(sharePreviewRef.current);
         setIsSharing(true);
       } catch (e: any) {
         if (e?.name !== "NotAllowedError") console.warn("[Zoom] startShareScreen:", e);
@@ -766,9 +824,19 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
     }
   }
 
+  function handleTileClick(userId: number) {
+    if (viewMode === 'speaker' && pinnedUserId === userId && sharingUserId === null) {
+      // Clicking the already-pinned tile → unpin → grid
+      setViewMode('grid');
+      setPinnedUserId(null);
+    } else {
+      // Pin this participant → speaker view
+      setPinnedUserId(userId);
+      setViewMode('speaker');
+    }
+  }
+
   async function sendMsg(text: string) {
-    // Add locally first (immediate feedback)
-    addMsg({ sender:"You", text, time:nowTime(), isMe:true });
     // Send via Zoom SDK chat
     const chatClient = clientRef.current?.getChatClient?.();
     if (chatClient) {
@@ -817,7 +885,9 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
 
   const myId = localIdRef.current;
   const remotes = participants.filter(p => p.userId !== myId);
-  const isSpeakerView = isSharing || sharingUserId !== null;
+  const isShareMode   = sharingUserId !== null && sharingUserId !== myId;
+  // Speaker mode: screen share active OR user pinned a tile
+  const isSpeakerMode = viewMode === 'speaker' || isShareMode;
   const totalTiles = remotes.length + 1; // +1 for self
 
   return (
@@ -828,8 +898,8 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .zs-grid { display:grid; width:100%; height:100%; gap:8px; }
-        .zs-grid > * { min-height:0; aspect-ratio:16/9; }
+        .zs-grid { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; align-content:center; width:100%; height:100%; gap:8px; padding:8px; }
+        .zs-grid > * { min-height:0; aspect-ratio:16/9; flex:1 1 calc(var(--max-w) - 8px); max-width:calc(var(--max-w) - 8px); max-height:100%; }
         .zs-thumb > * { aspect-ratio:16/9; width:100%; flex-shrink:0; min-height:0; }
       `}</style>
 
@@ -857,6 +927,18 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
             You are presenting
           </span>
         )}
+        {/* Unpin button — shown when user has manually pinned someone */}
+        {isSpeakerMode && !isShareMode && pinnedUserId !== null && (
+          <button
+            onClick={() => { setViewMode('grid'); setPinnedUserId(null); }}
+            style={{
+              fontSize:11, color:"rgba(255,255,255,.5)", background:"rgba(255,255,255,.08)",
+              border:"none", borderRadius:6, padding:"3px 9px", cursor:"pointer",
+            }}
+          >
+            ✕ Unpin
+          </button>
+        )}
         <style>{`@keyframes zs-pulse{0%,100%{opacity:1}50%{opacity:.3}}`}</style>
         <span style={{ fontSize:12, color:"rgba(255,255,255,.35)", flexShrink:0 }}>
           👥 {totalTiles}
@@ -868,75 +950,60 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
 
         {/* ── Video area ── */}
         <div style={{ flex:1, minWidth:0, position:"relative", overflow:"hidden" }}>
-          {isSpeakerView ? (
-            /* ── SPEAKER VIEW ── */
-            <div style={{ display:"flex", height:"100%", gap:0 }}>
-              {/* Main large panel */}
-              <div style={{ flex:1, position:"relative", background:"#000", minWidth:0 }}>
-                <canvas
-                  ref={shareCanvasRef}
-                  style={{ position:"absolute", inset:0, width:"100%", height:"100%", display:"block" }}
-                />
-                {!sharingUserId && !isSharing && (
-                  <div style={{
-                    position:"absolute", inset:0, display:"flex",
-                    alignItems:"center", justifyContent:"center",
-                    flexDirection:"column", gap:12, color:"rgba(255,255,255,.2)",
-                  }}>
-                    <Monitor size={52}/>
-                    <span style={{ fontSize:13 }}>Screen share ended</span>
-                  </div>
-                )}
-              </div>
-              {/* Right thumbnail strip */}
-              <div className="zs-thumb" style={{
-                width:168, background:"#141414", flexShrink:0,
-                padding:8, display:"flex", flexDirection:"column", gap:8, overflowY:"auto",
-              }}>
-                <SelfTile
-                  name={userName}
-                  isVideoOn={isVideoOn}
-                  isMuted={isMuted}
-                  isSpeaking={localSpeaking && !isMuted}
-                  videoRef={selfVideoRef}
-                />
-                {remotes.map(p => (
-                  <RemoteTile
-                    key={p.userId}
-                    participant={p}
-                    stream={streamRef.current}
-                    isSpeaking={activeSpeakers.has(p.userId)}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : (
-            /* ── GALLERY VIEW ── */
-            <div style={{ padding:10, height:"100%", display:"flex", alignItems:"center", overflow:"hidden" }}>
-              <div
-                className="zs-grid"
-                style={{ gridTemplateColumns: gridCols(totalTiles) }}
-              >
-                <SelfTile
-                  name={userName}
-                  isVideoOn={isVideoOn}
-                  isMuted={isMuted}
-                  isSpeaking={localSpeaking && !isMuted}
-                  videoRef={selfVideoRef}
-                />
-                {remotes.map(p => (
-                  <RemoteTile
-                    key={p.userId}
-                    participant={p}
-                    stream={streamRef.current}
-                    isSpeaking={activeSpeakers.has(p.userId)}
-                  />
-                ))}
-              </div>
-              {/* Hidden canvas for screen share (always in DOM for ref stability) */}
-              <canvas ref={shareCanvasRef} style={{ display:"none" }}/>
-            </div>
-          )}
+          <div
+            className={isSpeakerMode ? "" : "zs-grid"}
+            style={isSpeakerMode ? {
+               width: "100%", height: "100%",
+               display: "block",
+               padding: 8,
+               gap: 0,
+               overflowY: "auto",
+               position: "relative"
+            } : {
+               overflowY: "auto", position: "relative",
+               "--max-w": totalTiles <= 1 ? "100%" : totalTiles <= 4 ? "50%" : totalTiles <= 9 ? "33.333%" : "25%"
+            } as React.CSSProperties}
+          >
+            <canvas
+              ref={shareCanvasRef}
+              style={{
+                display: isShareMode ? "block" : "none",
+                position: "sticky", top: 0, float: "left",
+                width: "calc(100% - 176px)", height: "calc(100vh - 144px)",
+                background: "#000", zIndex: 10
+              }}
+            />
+
+            {[
+              { isSelf: true, userId: myId ?? 0, participant: { userId: myId ?? 0, displayName: userName, bVideoOn: isVideoOn, muted: isMuted } as Participant },
+              ...remotes.map(p => ({ isSelf: false, userId: p.userId, participant: p }))
+            ].map(item => {
+               const pId = item.userId;
+               const isPinned = isSpeakerMode && !isShareMode && pinnedUserId === pId;
+               
+               return (
+                 <div key={pId} style={
+                   isPinned ? {
+                     position: "sticky", top: 0, float: "left",
+                     width: "calc(100% - 176px)", height: "calc(100vh - 144px)",
+                     zIndex: 5
+                   } : isSpeakerMode ? {
+                     width: 168, height: 94,
+                     marginBottom: 8, marginLeft: "auto",
+                     position: "relative", zIndex: 3
+                   } : {
+                     width: "100%", height: "100%", position: "relative"
+                   }
+                 }>
+                   {item.isSelf ? (
+                     <SelfTile name={userName} isVideoOn={isVideoOn} isMuted={isMuted} isSpeaking={localSpeaking && !isMuted} stream={streamRef.current} localId={myId} onClick={() => handleTileClick(myId ?? 0)} />
+                   ) : (
+                     <RemoteTile participant={item.participant} stream={streamRef.current} isSpeaking={activeSpeakers.has(pId)} onClick={() => handleTileClick(pId)} />
+                   )}
+                 </div>
+               );
+            })}
+          </div>
         </div>
 
         {/* ── Chat sidebar ── */}
@@ -985,12 +1052,14 @@ export function ZoomSession({ token, sessionName, userName, onLeave }: ZoomSessi
           active={isVideoOn}
           danger={!isVideoOn}
         />
-        <TbBtn
-          icon={<Monitor size={18}/>}
-          label={isSharing ? "Stop Share" : "Share Screen"}
-          onClick={toggleShare}
-          active={isSharing}
-        />
+        {isLocalHost && (
+          <TbBtn
+            icon={<Monitor size={18}/>}
+            label={isSharing ? "Stop Share" : "Share Screen"}
+            onClick={toggleShare}
+            active={isSharing}
+          />
+        )}
 
         {/* Divider */}
         <div style={{ width:1, height:36, background:"rgba(255,255,255,.1)", margin:"0 6px" }}/>

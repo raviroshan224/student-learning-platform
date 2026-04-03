@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, CheckCircle, Play, BookOpen, Lock } from "lucide-react";
@@ -19,10 +19,12 @@ function VideoPlayer({
   url,
   lectureId,
   onProgress,
+  onError,
 }: {
   url?: string | null;
   lectureId: string;
   onProgress: (pct: number) => void;
+  onError: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -32,7 +34,35 @@ function VideoPlayer({
     onProgress((v.currentTime / v.duration) * 100);
   }
 
-  if (!url) {
+  const resolvedUrl = useMemo(() => {
+    if (!url) return null;
+    try {
+      if (url.includes("youtube.com") || url.includes("youtu.be")) return url;
+      
+      // Use window.location.origin to safely parse relative URLs e.g. /api/...
+      const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      
+      const isApiHost = url.startsWith('/') || parsed.pathname.startsWith('/api') || parsed.hostname.includes('scholargyan') || parsed.hostname.includes('localhost');
+      const hasSignature = ['token', 'signature', 'x-amz-signature', 'Expires'].some(k => 
+        parsed.searchParams.has(k) || parsed.searchParams.has(k.toLowerCase())
+      );
+      
+      if (isApiHost && !hasSignature) {
+        let t = null;
+        try { t = require("@/stores/auth.store").useAuthStore.getState().accessToken; } catch {}
+        if (!t) t = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+        if (t) {
+          parsed.searchParams.set("token", t); // Web equivalent of Authorization header
+          return url.startsWith('/') ? parsed.pathname + parsed.search : parsed.toString();
+        }
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  }, [url]);
+
+  if (!resolvedUrl) {
     return (
       <div className="bg-black aspect-video w-full flex items-center justify-center">
         <div className="text-center text-white space-y-2">
@@ -46,12 +76,12 @@ function VideoPlayer({
   }
 
   // YouTube
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  const ytMatch = resolvedUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) {
     return (
       <div className="aspect-video w-full bg-black">
         <iframe
-          src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`}
+          src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className="h-full w-full"
@@ -64,10 +94,13 @@ function VideoPlayer({
     <div className="aspect-video w-full bg-black">
       <video
         ref={videoRef}
-        src={url}
+        src={resolvedUrl}
         controls
+        autoPlay
+        playsInline
         className="h-full w-full"
         onTimeUpdate={handleTimeUpdate}
+        onError={onError}
       />
     </div>
   );
@@ -145,16 +178,41 @@ export default function LecturePage() {
   const urlFromParam = searchParams.get("url");
   const [videoUrl, setVideoUrl] = useState<string | null>(urlFromParam ?? null);
   const [urlLoading, setUrlLoading] = useState(!urlFromParam);
+  const [retryCount, setRetryCount] = useState(0);
   const hasMarkedComplete = useRef(false);
 
-  // Fetch watch URL if not passed as param
-  useEffect(() => {
-    if (urlFromParam) { setVideoUrl(urlFromParam); setUrlLoading(false); return; }
+  // Fetch watch URL if not passed as param or during retry
+  const fetchWatchUrl = useCallback(() => {
+    setUrlLoading(true);
     CoursesService.watchLecture(lectureId)
-      .then((res) => setVideoUrl((res.data as any)?.url ?? null))
-      .catch(() => setVideoUrl(null))
+      .then((res) => {
+        const body = res.data as any;
+        setVideoUrl(body?.data?.videoUrl ?? body?.data?.url ?? body?.videoUrl ?? body?.url ?? null);
+      })
+      .catch(() => {
+        setVideoUrl(null);
+        toast.error("Failed to load lecture link.");
+      })
       .finally(() => setUrlLoading(false));
-  }, [lectureId, urlFromParam]);
+  }, [lectureId]);
+
+  useEffect(() => {
+    if (urlFromParam && retryCount === 0) { 
+      setVideoUrl(urlFromParam); 
+      setUrlLoading(false); 
+      return; 
+    }
+    fetchWatchUrl();
+  }, [lectureId, urlFromParam, retryCount, fetchWatchUrl]);
+
+  const handleVideoError = useCallback(() => {
+    if (retryCount < 1) {
+      toast("Playback link expired. Requesting fresh link...");
+      setRetryCount(c => c + 1);
+    } else {
+      toast.error("Video failed to play. Please try again later.");
+    }
+  }, [retryCount]);
 
   // Subjects for sidebar
   const { data: subjectsRaw, isLoading: subjectsLoading } = useQuery({
@@ -204,7 +262,7 @@ export default function LecturePage() {
         {urlLoading ? (
           <Skeleton className="aspect-video w-full" />
         ) : (
-          <VideoPlayer url={videoUrl} lectureId={lectureId} onProgress={handleProgress} />
+          <VideoPlayer url={videoUrl} lectureId={lectureId} onProgress={handleProgress} onError={handleVideoError} />
         )}
 
         {/* Controls */}

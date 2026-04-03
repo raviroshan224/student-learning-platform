@@ -18,10 +18,24 @@ async function proxyRequest(
   // Forward relevant headers only
   const forwardHeaders: Record<string, string> = {};
   const auth = request.headers.get("authorization");
-  if (auth) forwardHeaders["authorization"] = auth;
+  
+  if (auth) {
+    forwardHeaders["authorization"] = auth;
+  } else {
+    // HTML5 <video> tags cannot send Authorization headers.
+    // If the frontend passed a ?token= parameter, transpose it to a Bearer header.
+    const queryToken = targetUrl.searchParams.get("token");
+    if (queryToken) {
+      forwardHeaders["authorization"] = `Bearer ${queryToken}`;
+      targetUrl.searchParams.delete("token");
+    }
+  }
 
   const contentType = request.headers.get("content-type");
   if (contentType) forwardHeaders["content-type"] = contentType;
+
+  const range = request.headers.get("range");
+  if (range) forwardHeaders["range"] = range;
 
   // Read body for non-GET/HEAD methods
   let body: BodyInit | undefined;
@@ -63,9 +77,8 @@ async function proxyRequest(
     });
   }
 
-  const responseBody = await backendRes.arrayBuffer();
-
-  return new NextResponse(responseBody, {
+  // Stream the response directly to support chunked 206 Partial Content for videos
+  return new NextResponse(backendRes.body, {
     status: backendRes.status,
     statusText: backendRes.statusText,
     headers: responseHeaders,
