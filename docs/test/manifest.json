@@ -1,0 +1,23 @@
+{
+  "featureName": "Mock Test & Test Session",
+  "sourceRepo": "olp_mobileapp (Flutter)",
+  "documentationVersion": "1.0.0",
+  "endpoints": [
+    { "id": "start_session", "method": "POST", "path": "/test-sessions/start", "requiredAuth": true },
+    { "id": "get_session", "method": "GET", "path": "/test-sessions/{sessionId}", "requiredAuth": true },
+    { "id": "submit_answer", "method": "PATCH", "path": "/test-sessions/{sessionId}/answer", "requiredAuth": true },
+    { "id": "submit_test", "method": "POST", "path": "/test-sessions/{sessionId}/submit", "requiredAuth": true },
+    { "id": "get_result", "method": "GET", "path": "/test-sessions/{sessionId}/result", "requiredAuth": true }
+  ],
+  "pages": [
+    { "name": "TestsPage", "route": "/tests", "source": "lib/features/test/presentation/pages/test_page.dart" },
+    { "name": "QuizPage", "route": "/tests/session/{sessionId}", "source": "lib/features/test/presentation/pages/detail_pages/quiz_page.dart" },
+    { "name": "ResultPage", "route": "/tests/session/{sessionId}/result", "source": "lib/features/test/presentation/pages/detail_pages/result_page.dart" }
+  ],
+  "models": ["TestSession", "TestQuestion", "TestResult", "TestHistoryItem"],
+  "rules": {
+    "backgroundAutoSubmitThresholdSeconds": 10,
+    "timerSource": "serverDelta(endsAt - now)",
+    "crashRecovery": "persistentSessionId"
+  }
+}

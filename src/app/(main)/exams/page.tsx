@@ -1,299 +1,166 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Clock, CheckCircle, ChevronDown } from "lucide-react";
+import { Search, Filter, ClipboardList, BookOpen, ChevronRight, LayoutGrid, List } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { ExamsService } from "@/services/api/exams.service";
-import { EnrollmentsService } from "@/services/api/enrollments.service";
-import type { MockTestModel } from "@/types/models/exam";
-import toast from "react-hot-toast";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-type Tab = "available" | "history";
-
-function resolveImageUrl(url?: string | null): string | undefined {
-  if (!url) return undefined;
+function resolveImageUrl(url?: string | null): string {
+  if (!url) return "/placeholder-exam.jpg";
   if (url.startsWith("http")) return url;
   return `https://olp-uploads.s3.us-east-1.amazonaws.com/${url.startsWith("/") ? url.slice(1) : url}`;
 }
 
-export default function ExamsPage() {
+export default function ExamsCataloguePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("available");
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const { data: enrollmentsRaw, isLoading: enrollmentsLoading } = useQuery({
-    queryKey: ["my-enrollments"],
-    queryFn: () => EnrollmentsService.myCourses().then((r) => r.data),
+  const { data: examsData, isLoading } = useQuery({
+    queryKey: ["exams-list", search],
+    queryFn: () => ExamsService.list({ search, limit: 12 }).then((r) => r.data),
   });
 
-  const enrollments = Array.isArray(enrollmentsRaw)
-    ? enrollmentsRaw
-    : (enrollmentsRaw as any)?.data ?? [];
-
-  const firstCourseId = enrollments[0]?.course?.id ?? null;
-  const activeCourseId = selectedCourseId ?? firstCourseId;
-
-  const selectedCourse = enrollments.find(
-    (e: any) => e.course?.id === activeCourseId
-  )?.course;
-
-  const { data: mockTestsRaw, isLoading: mockTestsLoading } = useQuery({
-    queryKey: ["mock-tests", activeCourseId],
-    queryFn: () =>
-      ExamsService.mockTests(activeCourseId!).then((r) =>
-        Array.isArray(r.data) ? r.data : (r.data as any)?.data ?? []
-      ),
-    enabled: !!activeCourseId,
-  });
-
-  const { data: historyRaw, isLoading: historyLoading } = useQuery({
-    queryKey: ["test-history"],
-    queryFn: () =>
-      ExamsService.sessionHistory().then((r) =>
-        Array.isArray(r.data) ? r.data : (r.data as any)?.data ?? []
-      ),
-    enabled: activeTab === "history",
-  });
-
-  const mockTests: MockTestModel[] = mockTestsRaw ?? [];
-  const history: any[] = historyRaw ?? [];
-
-  const startMutation = useMutation({
-    mutationFn: ({ mockTestId, test }: { mockTestId: string; test: MockTestModel }) =>
-      ExamsService.startSession(mockTestId).then((res) => ({ res, test })),
-    onSuccess: ({ res, test }) => {
-      const session = res.data as any;
-      // Store session + questions in sessionStorage for the session page
-      sessionStorage.setItem(
-        `session_${session.id}`,
-        JSON.stringify({
-          ...session,
-          title: test.title,
-          timeLimitMinutes: test.timeLimitMinutes,
-        })
-      );
-      router.push(`/test/session/${session.id}`);
-    },
-    onError: () => {
-      toast.error("Failed to start test. Please try again.");
-    },
-  });
+  const exams = Array.isArray(examsData) ? examsData : (examsData as any)?.data ?? [];
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      <h1 className="text-xl font-bold text-[var(--foreground)]">Mock Tests</h1>
-
-      {/* Course Selector */}
-      {enrollmentsLoading ? (
-        <Skeleton className="h-8 w-48" />
-      ) : enrollments.length > 0 ? (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-[var(--muted-foreground)] font-medium">Course:</span>
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-1.5 font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] transition-colors"
-            >
-              {selectedCourse?.courseTitle ?? "Select a course"}
-              <ChevronDown className="h-4 w-4" />
-            </button>
-            {showDropdown && (
-              <div className="absolute top-full left-0 z-20 mt-1 w-72 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] shadow-lg overflow-hidden">
-                {enrollments.map((e: any) => (
-                  <button
-                    key={e.course?.id}
-                    onClick={() => {
-                      setSelectedCourseId(e.course?.id);
-                      setShowDropdown(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--muted)] transition-colors",
-                      activeCourseId === e.course?.id &&
-                        "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                    )}
-                  >
-                    {e.course?.courseTitle}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="space-y-6 max-w-6xl pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Exam Catalogue</h1>
+          <p className="text-[var(--muted-foreground)]">Explore our curated exam packages and certification tests.</p>
         </div>
-      ) : null}
-
-      {/* Tabs */}
-      <div className="border-b border-[var(--border)]">
-        <div className="flex">
-          {(["available", "history"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "px-6 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px",
-                activeTab === tab
-                  ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
-                  : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              )}
-            >
-              {tab === "available" ? "Available Tests" : "Test History"}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode("grid")}
+            className={cn(viewMode === "grid" && "bg-[var(--muted)]")}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode("list")}
+            className={cn(viewMode === "list" && "bg-[var(--muted)]")}
+          >
+            <List className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      {/* Available Tests */}
-      {activeTab === "available" && (
-        <>
-          {!activeCourseId ? (
-            <div className="py-16 text-center text-[var(--muted-foreground)]">
-              <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No enrolled courses</p>
-              <p className="text-sm mt-1">Enroll in a course to access mock tests</p>
-            </div>
-          ) : mockTestsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-[var(--radius-md)]" />
-              ))}
-            </div>
-          ) : mockTests.length === 0 ? (
-            <div className="py-16 text-center text-[var(--muted-foreground)]">
-              <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No tests available</p>
-              <p className="text-sm mt-1">No mock tests for this course yet</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {mockTests.map((test) => (
-                <Card key={test.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 shrink-0 rounded-[var(--radius)] bg-[var(--color-primary-50)] flex items-center justify-center">
-                        <ClipboardList className="h-5 w-5 text-[var(--color-primary-600)]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm line-clamp-1">{test.title}</p>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-[var(--muted-foreground)]">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {test.timeLimitMinutes} min
-                          </span>
-                          <span>{test.questionCount} questions</span>
-                          <span>{test.totalMarks} marks</span>
-                        </div>
-                        {test.attempted && test.lastAttemptScore != null && (
-                          <p className="text-xs text-[var(--color-primary-600)] mt-0.5 font-medium">
-                            Last score: {test.lastAttemptScore}/{test.totalMarks}
-                          </p>
-                        )}
-                      </div>
-                      <div className="shrink-0 flex flex-col items-end gap-1.5">
-                        {test.attempted && (
-                          <Badge variant="outline" className="text-[10px]">Attempted</Badge>
-                        )}
-                        <Button
-                          size="sm"
-                          onClick={() => startMutation.mutate({ mockTestId: test.id, test })}
-                          disabled={startMutation.isPending}
-                        >
-                          {test.attempted ? "Retake" : "Start Test"}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]" />
+          <Input
+            placeholder="Search by title, category, or course..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 bg-[var(--card)]"
+          />
+        </div>
+        <Button variant="outline" className="gap-2">
+          <Filter className="h-4 w-4" /> Filters
+        </Button>
+      </div>
 
-      {/* Test History */}
-      {activeTab === "history" && (
-        <>
-          {historyLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-[var(--radius-md)]" />
-              ))}
-            </div>
-          ) : history.length === 0 ? (
-            <div className="py-16 text-center text-[var(--muted-foreground)]">
-              <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No test history yet</p>
-              <p className="text-sm mt-1">Complete a test to see your results here</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {history.map((item: any) => (
-                <Card key={item.sessionId} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="py-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${
-                          item.passed
-                            ? "bg-[var(--color-success)]/10"
-                            : "bg-[var(--color-danger)]/10"
-                        }`}
-                      >
-                        <CheckCircle
-                          className={`h-5 w-5 ${
-                            item.passed
-                              ? "text-[var(--color-success)]"
-                              : "text-[var(--color-danger)]"
-                          }`}
+      {/* List */}
+      {isLoading ? (
+        <div className={cn(
+          "gap-4",
+          viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid grid-cols-1"
+        )}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className={cn("rounded-xl", viewMode === "grid" ? "aspect-[4/3]" : "h-28")} />
+          ))}
+        </div>
+      ) : exams.length === 0 ? (
+        <div className="py-20 text-center space-y-3">
+          <ClipboardList className="h-12 w-12 mx-auto text-[var(--muted-foreground)] opacity-20" />
+          <h3 className="text-lg font-semibold">No exams found</h3>
+          <p className="text-[var(--muted-foreground)]">Try adjusting your search or filters.</p>
+          <Button variant="outline" onClick={() => setSearch("")}>Clear Search</Button>
+        </div>
+      ) : (
+        <div className={cn(
+          "gap-4",
+          viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 border-none" : "flex flex-col"
+        )}>
+          {exams.map((exam: any) => (
+            <Card
+              key={exam.id}
+              className={cn(
+                "group cursor-pointer hover:shadow-xl transition-all duration-300 border-[var(--border)] overflow-hidden",
+                viewMode === "list" && "hover:border-[var(--color-primary-300)]"
+              )}
+              onClick={() => router.push(`/exams/${exam.id}`)}
+            >
+                <div className={cn("relative", viewMode === "list" ? "flex" : "flex flex-col")}>
+                    {/* Thumbnail */}
+                    <div className={cn(
+                        "relative bg-[var(--muted)]/30 shrink-0",
+                        viewMode === "grid" ? "aspect-video" : "w-32 h-full sm:w-48 sm:aspect-video"
+                    )}>
+                        <Image
+                            src={resolveImageUrl(exam.examImageUrl)}
+                            alt={exam.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm line-clamp-1">
-                          {item.examTitle ?? item.mockTestTitle ?? "Mock Test"}
-                        </p>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-[var(--muted-foreground)]">
-                          <span
-                            className={`font-bold ${
-                              item.passed
-                                ? "text-[var(--color-success)]"
-                                : "text-[var(--color-danger)]"
-                            }`}
-                          >
-                            {item.percentage}%
-                          </span>
-                          <span>
-                            {item.score}/{item.totalMarks} marks
-                          </span>
-                          {item.submittedAt && (
-                            <span>
-                              {new Date(item.submittedAt).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Badge
-                        className={`text-[10px] shrink-0 ${
-                          item.passed
-                            ? "bg-[var(--color-success)] text-white border-0"
-                            : "bg-[var(--color-danger)] text-white border-0"
-                        }`}
-                      >
-                        {item.passed ? "Passed" : "Failed"}
-                      </Badge>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </>
+
+                    <CardContent className={cn("p-4 flex flex-col justify-between flex-1", viewMode === "list" && "py-3 min-w-0")}>
+                        <div className="space-y-2">
+                             <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="px-1.5 py-0 text-[10px] uppercase font-bold tracking-wider">
+                                    {exam.categoryName ?? exam.categoryId ?? "General"}
+                                </Badge>
+                                {exam.status === 'active' && (
+                                    <div className="flex items-center gap-1">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
+                                        <span className="text-[10px] font-bold text-[var(--color-success)] uppercase tracking-tight">Active Now</span>
+                                    </div>
+                                )}
+                             </div>
+
+                             <div>
+                                <h3 className="font-bold text-base line-clamp-1 group-hover:text-[var(--color-primary-600)] transition-colors">
+                                    {exam.title}
+                                </h3>
+                                {viewMode === "list" && (
+                                     <p className="text-xs text-[var(--muted-foreground)] line-clamp-2 mt-1">
+                                        Comprehensive certification exam for {exam.title}. Includes access to multiple mock sessions.
+                                     </p>
+                                )}
+                             </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-4">
+                            <div className="flex items-center gap-1 text-[var(--muted-foreground)] text-xs font-medium">
+                                <BookOpen className="h-3.5 w-3.5" />
+                                <span>{exam.courseCount ?? 0} Courses</span>
+                            </div>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]">
+                                Details <ChevronRight className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </div>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

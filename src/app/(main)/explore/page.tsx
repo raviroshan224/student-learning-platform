@@ -33,7 +33,7 @@ function CourseCard({
     : course.enrollmentCost;
 
   return (
-    <div className="relative rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] bg-[var(--card)] hover:shadow-md transition-shadow flex flex-col">
+    <div className="relative rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--card)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
       <Link href={ROUTES.COURSE_DETAIL(course.id)} className="flex-1 flex flex-col">
         {/* Thumbnail */}
         <div className="relative bg-gradient-to-br from-[var(--color-primary-600)] to-[var(--color-primary-500)] overflow-hidden" style={{ aspectRatio: "16/9" }}>
@@ -43,16 +43,15 @@ function CourseCard({
               alt={course.courseTitle}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <BookOpen className="h-8 w-8 text-white/40" />
             </div>
           )}
-          {/* Badge */}
           {badge.type !== "NONE" && (
-            <div className="absolute top-1.5 left-1.5">
+            <div className="absolute top-2 left-2">
               {badge.type === "FREE" ? (
                 <span className="text-[10px] font-bold bg-[var(--color-success)] text-white px-1.5 py-0.5 rounded-full">FREE</span>
               ) : (
@@ -60,9 +59,8 @@ function CourseCard({
               )}
             </div>
           )}
-          {/* Category */}
           {course.categoryName && (
-            <div className="absolute bottom-1.5 left-1.5">
+            <div className="absolute bottom-2 left-2">
               <Badge className="text-[9px] bg-black/50 text-white border-0 backdrop-blur-sm px-1.5 py-0.5">
                 {course.categoryName}
               </Badge>
@@ -70,8 +68,8 @@ function CourseCard({
           )}
         </div>
         {/* Info */}
-        <div className="p-2.5 flex-1 flex flex-col gap-1">
-          <p className="text-xs font-semibold line-clamp-2 leading-snug text-[var(--foreground)]">
+        <div className="p-3 flex-1 flex flex-col gap-1.5">
+          <p className="text-xs font-semibold line-clamp-2 leading-snug text-[var(--foreground)] group-hover:text-[var(--color-primary-700)] transition-colors">
             {course.courseTitle}
           </p>
           <div className="mt-auto flex items-baseline gap-1.5">
@@ -96,7 +94,7 @@ function CourseCard({
       <button
         onClick={(e) => { e.preventDefault(); onBookmark(); }}
         disabled={bookmarking}
-        className="absolute top-1.5 right-1.5 h-7 w-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors disabled:opacity-50"
         aria-label={course.isSaved ? "Unsave" : "Save"}
       >
         {course.isSaved ? (
@@ -110,13 +108,13 @@ function CourseCard({
 }
 
 // ─── Skeleton Grid ────────────────────────────────────────────────────────────
-function CourseGridSkeleton({ count = 6 }: { count?: number }) {
+function CourseGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] bg-[var(--card)]">
+        <div key={i} className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--card)]">
           <Skeleton className="w-full" style={{ aspectRatio: "16/9" }} />
-          <div className="p-2.5 space-y-2">
+          <div className="p-3 space-y-2">
             <Skeleton className="h-3 w-full" />
             <Skeleton className="h-3 w-2/3" />
             <Skeleton className="h-3 w-1/3" />
@@ -278,7 +276,7 @@ function ExploreContent() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {courses.map((course: any) => (
               <CourseCard
                 key={course.id}

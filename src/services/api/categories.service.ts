@@ -1,8 +1,8 @@
 import client from './client';
-import type { CategoryModel } from '@/types/models/category';
+import type { CategoryHierarchyItem } from '@/types/models/category';
 
 export const CategoriesService = {
-  hierarchy: () => client.get<CategoryModel[]>('/categories/hierarchy'),
+  hierarchy: () => client.get<CategoryHierarchyItem[]>('/categories/hierarchy').then(res => res.data),
   favoriteSave: (categoryIds: string[]) =>
-    client.post('/user-preferences/favorite-categories', { categoryIds }),
+    client.put('/user-preferences/favorite-categories', { categoryIds }),
 };

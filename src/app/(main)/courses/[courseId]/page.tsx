@@ -17,6 +17,7 @@ import { CoursesService } from "@/services/api/courses.service";
 import { EnrollmentsService } from "@/services/api/enrollments.service";
 import { LiveService } from "@/services/api/live.service";
 import { useAuth } from "@/hooks/useAuth";
+import { LiveClassCard } from "@/components/live/LiveClassCard";
 import {
   resolveImageUrl, getCourseIsEnrolled, getEnrollCTA, getExpiryLabel,
   groupLecturesBySubject, formatDurationSeconds, computeLiveClassStatus,
@@ -378,45 +379,9 @@ function LiveClassesTab({ courseId }: { courseId: string }) {
 
   return (
     <div className="space-y-3">
-      {classes.map((lc: any) => {
-        const { isJoinable, displayStatus } = computeLiveClassStatus(lc);
-        const img = resolveImageUrl(lc.thumbnailUrl ?? lc.bannerImageUrl);
-        const start = lc.startTime ?? lc.scheduledAt;
-        return (
-          <div key={lc.id} className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] overflow-hidden">
-            {img && (
-              <div className="relative h-36">
-                <Image src={img} alt={lc.title} fill sizes="100vw" className="object-cover" />
-                <div className="absolute inset-0 bg-black/20" />
-                <div className="absolute top-2 left-2">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                    displayStatus === "Live now" ? "bg-[var(--color-primary-600)]/90 text-white" :
-                    displayStatus === "Starts soon" ? "bg-amber-500/90 text-white" :
-                    "bg-gray-500/80 text-white"
-                  }`}>{displayStatus}</span>
-                </div>
-              </div>
-            )}
-            <div className="p-3 space-y-1.5">
-              <p className="font-semibold text-sm">{lc.title}</p>
-              {start && (
-                <div className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]">
-                  <Clock className="h-3 w-3" />
-                  {new Date(start).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                </div>
-              )}
-              {(lc.lecturerName ?? lc.instructorName) && (
-                <p className="text-xs text-[var(--muted-foreground)]">{lc.lecturerName ?? lc.instructorName}</p>
-              )}
-              {isJoinable && (
-                <Button size="sm" className="w-full mt-1 gap-1" onClick={() => router.push(`/live/${lc.id}`)}>
-                  <Radio className="h-3 w-3" /> Join Now
-                </Button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {classes.map((lc: any) => (
+        <LiveClassCard key={lc.id} lc={lc} variant="full" />
+      ))}
     </div>
   );
 }
@@ -464,7 +429,9 @@ function MockTestsTab({ courseId, isEnrolled }: { courseId: string; isEnrolled: 
                   )}
                 </div>
               </div>
-              <Button size="sm" variant="outline">Start</Button>
+              <Link href={ROUTES.TEST_DETAIL(test.id, courseId)}>
+                <Button size="sm" variant="outline">Start</Button>
+              </Link>
             </div>
           </div>
         );

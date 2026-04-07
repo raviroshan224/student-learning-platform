@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Bell, Search, BookOpen, Clock, ChevronRight, Play, Award,
-  AlertCircle, User as UserIcon, Wifi
+  AlertCircle, User as UserIcon
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { ROUTES } from "@/lib/constants/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { HomepageService } from "@/services/api/homepage.service";
 import { LiveService } from "@/services/api/live.service";
+import { LiveClassCard } from "@/components/live/LiveClassCard";
 import toast from "react-hot-toast";
 
 function resolveImageUrl(url?: string | null): string | undefined {
@@ -107,8 +109,22 @@ function BannerSlider({ banners }: { banners: any[] }) {
   );
 }
 
+// ─── Section Header ───────────────────────────────────────────────────────────
+function SectionHeader({ title, href, linkLabel = "See All" }: { title: string; href?: string; linkLabel?: string }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-base font-semibold text-[var(--foreground)]">{title}</h2>
+      {href && (
+        <Link href={href} className="flex items-center gap-0.5 text-xs font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] transition-colors">
+          {linkLabel} <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 // ─── Course Card ──────────────────────────────────────────────────────────────
-function CourseCard({ course }: { course: any }) {
+function CourseCard({ course, className }: { course: any; className?: string }) {
   const img = resolveImageUrl(course.courseImageUrl);
   const free = !course.enrollmentCost || course.enrollmentCost === 0;
   const price = course.hasOffer && course.discountedPrice
@@ -116,32 +132,32 @@ function CourseCard({ course }: { course: any }) {
     : free ? "Free" : `Rs ${course.enrollmentCost?.toLocaleString()}`;
 
   return (
-    <Link href={ROUTES.COURSE_DETAIL(course.id)} className="shrink-0 w-40 block">
-      <div className="rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] bg-[var(--card)] hover:shadow-md transition-shadow h-full">
-        <div className="relative h-24 bg-gradient-to-br from-[var(--color-primary-600)] to-[var(--color-primary-500)] overflow-hidden">
+    <Link href={ROUTES.COURSE_DETAIL(course.id)} className={`block group ${className ?? ""}`}>
+      <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--card)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 h-full flex flex-col">
+        <div className="relative bg-gradient-to-br from-[var(--color-primary-600)] to-[var(--color-primary-500)] overflow-hidden" style={{ aspectRatio: "16/9" }}>
           {img ? (
-            <Image src={img} alt={course.courseTitle} fill sizes="160px" className="object-cover" />
+            <Image src={img} alt={course.courseTitle} fill sizes="(max-width: 640px) 160px, (max-width: 1024px) 200px, 240px" className="object-cover group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <BookOpen className="h-8 w-8 text-white/60" />
             </div>
           )}
           {course.hasOffer && course.discountedPrice != null && (
-            <div className="absolute top-1.5 left-1.5">
+            <div className="absolute top-2 left-2">
               <span className="text-[9px] font-bold bg-[var(--color-warning)] text-white px-1.5 py-0.5 rounded-full">OFFER</span>
             </div>
           )}
           {free && (
-            <div className="absolute top-1.5 right-1.5">
+            <div className="absolute top-2 right-2">
               <span className="text-[9px] font-bold bg-[var(--color-success)] text-white px-1.5 py-0.5 rounded-full">FREE</span>
             </div>
           )}
         </div>
-        <div className="p-2.5 space-y-1">
+        <div className="p-3 flex-1 flex flex-col gap-1.5">
           <p className="text-xs font-semibold line-clamp-2 leading-snug text-[var(--foreground)]">
             {course.courseTitle}
           </p>
-          <p className={`text-xs font-bold ${free ? "text-[var(--color-success)]" : "text-[var(--color-primary-600)]"}`}>
+          <p className={`text-xs font-bold mt-auto ${free ? "text-[var(--color-success)]" : "text-[var(--color-primary-600)]"}`}>
             {price}
           </p>
         </div>
@@ -150,70 +166,7 @@ function CourseCard({ course }: { course: any }) {
   );
 }
 
-// ─── Live Class Card ──────────────────────────────────────────────────────────
-function LiveClassCard({ lc, showJoin }: { lc: any; showJoin?: boolean }) {
-  const [joining, setJoining] = useState(false);
-  const live = isLiveNow(lc.scheduledAt, lc.durationMinutes);
-
-  async function handleJoin() {
-    setJoining(true);
-    try {
-      const res = await LiveService.joinToken(lc.id);
-      const url = res.data?.meetingUrl ?? lc.meetingUrl;
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("No meeting link available.");
-    } catch {
-      // Fall back to meetingUrl if token endpoint fails
-      if (lc.meetingUrl) window.open(lc.meetingUrl, "_blank", "noopener,noreferrer");
-      else toast.error("Unable to join class.");
-    } finally {
-      setJoining(false);
-    }
-  }
-
-  return (
-    <div className="shrink-0 w-64">
-      <Card className="h-full">
-        <CardContent className="py-3 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold line-clamp-2">{lc.title}</p>
-            {live ? (
-              <span className="flex items-center gap-1 shrink-0">
-                <span className="h-2 w-2 rounded-full bg-[var(--color-success)] animate-pulse" />
-                <Badge className="bg-[var(--color-success)] text-white text-[10px]">Live</Badge>
-              </span>
-            ) : (
-              <Badge className="bg-[var(--color-warning)] text-white text-[10px] shrink-0">Upcoming</Badge>
-            )}
-          </div>
-          {(lc.lecturerName ?? lc.instructorName) && (
-            <p className="text-xs text-[var(--muted-foreground)]">{lc.lecturerName ?? lc.instructorName}</p>
-          )}
-          <div className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]">
-            <Clock className="h-3 w-3" />
-            {formatClassTime(lc.scheduledAt)}
-            {lc.durationMinutes && (
-              <span className="ml-1">· {lc.durationMinutes}m</span>
-            )}
-          </div>
-          {showJoin && (live || lc.meetingUrl) && (
-            <Button
-              size="sm"
-              variant={live ? "default" : "outline"}
-              className="w-full gap-1 mt-1"
-              onClick={handleJoin}
-              loading={joining}
-              disabled={joining}
-            >
-              <Wifi className="h-3 w-3" />
-              {live ? "Join Now" : "Join Class"}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+// (local LiveClassCard removed in favor of shared component)
 
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
@@ -265,10 +218,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="space-y-8 pb-4">
       {/* 1. Error Banner */}
       {error && (
-        <div className="flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 px-4 py-3">
+        <div className="flex items-center gap-2 rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 px-4 py-3">
           <AlertCircle className="h-4 w-4 text-[var(--color-danger)] shrink-0" />
           <p className="text-sm text-[var(--color-danger)]">
             Failed to load homepage content. Pull to refresh.
@@ -279,17 +232,17 @@ export default function DashboardPage() {
       {/* 2. Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-[var(--muted-foreground)]">Welcome back 👋</p>
+          <p className="text-sm text-[var(--muted-foreground)]">Welcome back</p>
           <h1 className="text-xl font-bold text-[var(--foreground)]">Namaste, {firstName}!</h1>
         </div>
         <div className="flex items-center gap-2">
           <Link href={ROUTES.NOTIFICATIONS}>
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--card)] shadow-sm border border-[var(--border)]">
+            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--card)] shadow-sm border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">
               <Bell className="h-4 w-4 text-[var(--muted-foreground)]" />
             </button>
           </Link>
           <Link href={ROUTES.PROFILE}>
-            <div className="h-9 w-9 rounded-full bg-[var(--color-primary-100)] border border-[var(--border)] overflow-hidden flex items-center justify-center">
+            <div className="h-9 w-9 rounded-full bg-[var(--color-primary-100)] border-2 border-[var(--color-primary-200)] overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-[var(--color-primary-300)] transition-all">
               {avatarUrl ? (
                 <Image src={avatarUrl} alt={firstName} width={36} height={36} className="object-cover" />
               ) : (
@@ -302,40 +255,57 @@ export default function DashboardPage() {
 
       {/* 3. Search Bar */}
       <Link href={ROUTES.EXPLORE}>
-        <div className="flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--card)] border border-[var(--border)] px-4 py-3 shadow-sm cursor-pointer">
+        <div className="flex items-center gap-3 rounded-xl bg-[var(--card)] border border-[var(--border)] px-4 py-3 shadow-sm cursor-pointer hover:border-[var(--color-primary-300)] hover:shadow-md transition-all">
           <Search className="h-4 w-4 text-[var(--muted-foreground)]" />
-          <span className="text-sm text-[var(--muted-foreground)]">Search courses, exams...</span>
+          <span className="text-sm text-[var(--muted-foreground)]">Search courses or mock tests...</span>
         </div>
       </Link>
 
-      {/* 4. Banner Slider */}
-      {isLoading ? (
-        <Skeleton className="w-full rounded-[var(--radius-lg)]" style={{ aspectRatio: "16/9" }} />
-      ) : banners.length > 0 ? (
-        <BannerSlider banners={banners} />
-      ) : null}
+      {/* 4. Banner + Recommended side-by-side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Banner */}
+        <div className="lg:col-span-3">
+          {isLoading ? (
+            <Skeleton className="w-full rounded-xl" style={{ aspectRatio: "16/9" }} />
+          ) : banners.length > 0 ? (
+            <BannerSlider banners={banners} />
+          ) : null}
+        </div>
 
-      {/* 5. Recommended Courses */}
-      {isLoading ? (
-        <div>
-          <Skeleton className="h-5 w-44 mb-3" />
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-40 shrink-0 rounded-[var(--radius-md)]" />)}
+        {/* Recommended Courses — vertical on desktop */}
+        {(isLoading || recommendedCourses.length > 0) && (
+          <div className="lg:col-span-2 flex flex-col">
+            <SectionHeader title="Recommended" href={ROUTES.EXPLORE} />
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+              </div>
+            ) : (
+              <div className="space-y-3 flex-1">
+                {recommendedCourses.slice(0, 4).map((c: any) => (
+                  <Link key={c.id} href={ROUTES.COURSE_DETAIL(c.id)} className="flex items-center gap-3 p-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:shadow-sm hover:border-[var(--color-primary-200)] transition-all group">
+                    <div className="relative h-14 w-20 shrink-0 rounded-lg overflow-hidden bg-[var(--color-primary-100)]">
+                      {resolveImageUrl(c.courseImageUrl) ? (
+                        <Image src={resolveImageUrl(c.courseImageUrl)!} alt={c.courseTitle} fill sizes="80px" className="object-cover" />
+                      ) : <BookOpen className="absolute inset-0 m-auto h-5 w-5 text-[var(--color-primary-400)]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold line-clamp-2 leading-snug group-hover:text-[var(--color-primary-700)] transition-colors">{c.courseTitle}</p>
+                      <p className="text-[10px] font-bold mt-1 text-[var(--color-primary-600)]">
+                        {!c.enrollmentCost || c.enrollmentCost === 0 ? "Free" : `Rs ${c.enrollmentCost?.toLocaleString()}`}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+            {/* Mobile horizontal scroll (hidden on lg) */}
+            <div className="lg:hidden flex gap-3 overflow-x-auto pb-2 scrollbar-hide mt-0">
+              {recommendedCourses.map((c: any) => <CourseCard key={c.id} course={c} className="shrink-0 w-36" />)}
+            </div>
           </div>
-        </div>
-      ) : recommendedCourses.length > 0 ? (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-[var(--foreground)]">Recommended Courses</h2>
-            <Link href={ROUTES.EXPLORE} className="text-xs text-[var(--color-primary-600)] flex items-center gap-0.5 font-medium">
-              See All <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {recommendedCourses.map((c: any) => <CourseCard key={c.id} course={c} />)}
-          </div>
-        </div>
-      ) : null}
+        )}
+      </div>
 
       {/* 6. Continue Learning */}
       {latestOngoing && (() => {
@@ -349,14 +319,9 @@ export default function DashboardPage() {
         const total = latestOngoing.totalLectures;
         return (
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-[var(--foreground)]">Continue Learning</h2>
-              <Link href={ROUTES.COURSE_DETAIL(courseId)} className="text-xs text-[var(--color-primary-600)] flex items-center gap-0.5 font-medium">
-                View Course <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
+            <SectionHeader title="Continue Learning" href={ROUTES.COURSE_DETAIL(courseId)} linkLabel="View Course" />
             <Link href={resumeHref} className="block group">
-              <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border)] bg-[var(--card)]">
+              <div className="relative rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--card)] hover:shadow-md transition-shadow">
                 {/* Blurred background */}
                 {img && (
                   <div className="absolute inset-0">
@@ -419,41 +384,21 @@ export default function DashboardPage() {
         );
       })()}
 
-      {/* 7. Upcoming Classes */}
-      {upcomingClasses.length > 0 && (
+      {/* 7. Upcoming + Live Classes */}
+      {(upcomingClasses.length > 0 || liveClasses.length > 0) && (
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-[var(--foreground)]">Upcoming Classes</h2>
-            <Link href={ROUTES.LIVE} className="text-xs text-[var(--color-primary-600)] flex items-center gap-0.5 font-medium">
-              See All <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {upcomingClasses.map((lc: any) => (
-              <LiveClassCard key={lc.id} lc={lc} showJoin={false} />
+          <SectionHeader title={liveClasses.length > 0 ? "Live Classes" : "Upcoming Classes"} href={ROUTES.LIVE} />
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:overflow-visible lg:pb-0">
+            {(liveClasses.length > 0 ? liveClasses : upcomingClasses).map((lc: any) => (
+              <div key={lc.id} className="shrink-0 w-72 lg:w-auto">
+                <LiveClassCard lc={lc} showJoin={liveClasses.length > 0} />
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 8. Live Classes */}
-      {liveClasses.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-[var(--foreground)]">Live Classes</h2>
-            <Link href={ROUTES.LIVE} className="text-xs text-[var(--color-primary-600)] flex items-center gap-0.5 font-medium">
-              See All <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {liveClasses.map((lc: any) => (
-              <LiveClassCard key={lc.id} lc={lc} showJoin={true} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 9. Upcoming Exam */}
+      {/* 8. Upcoming Exam */}
       {upcomingExam && (() => {
         const examImg = resolveImageUrl((upcomingExam as any).examImageUrl);
         const daysLeft = upcomingExam.examDate
@@ -461,64 +406,56 @@ export default function DashboardPage() {
           : (upcomingExam as any).daysUntilExam ?? null;
         return (
           <div>
-            <h2 className="text-base font-bold text-[var(--foreground)] mb-3">Upcoming Exam</h2>
-            <div className="relative rounded-[var(--radius-lg)] overflow-hidden bg-gradient-to-br from-[var(--color-primary-700)] via-[var(--color-primary-600)] to-[var(--secondary)]">
-              {/* Decorative circles */}
-              <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10" />
-              <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-white/5" />
-              <div className="relative p-4 flex items-center gap-4">
-                {/* Exam image or icon */}
-                <div className="shrink-0 h-16 w-16 rounded-[var(--radius-md)] overflow-hidden bg-white/15 flex items-center justify-center">
-                  {examImg ? (
-                    <Image src={examImg} alt={upcomingExam.title} width={64} height={64} className="object-cover" />
-                  ) : (
-                    <Award className="h-8 w-8 text-white" />
-                  )}
-                </div>
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  {(upcomingExam as any).category && (
-                    <span className="inline-block text-[10px] font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full mb-1.5">
-                      {(upcomingExam as any).category}
-                    </span>
-                  )}
-                  <p className="font-bold text-white text-sm leading-snug line-clamp-2">
-                    {upcomingExam.title}
-                  </p>
-                  {upcomingExam.examDate ? (
-                    <p className="text-xs text-white/70 mt-1">
-                      {new Date(upcomingExam.examDate).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                      })}
-                    </p>
-                  ) : null}
-                </div>
-                {/* Countdown pill */}
-                {daysLeft !== null && (
-                  <div className="shrink-0 flex flex-col items-center justify-center bg-white/15 rounded-[var(--radius-md)] px-3 py-2 min-w-[52px]">
-                    <span className="text-xl font-black text-white leading-none">{daysLeft}</span>
-                    <span className="text-[9px] font-semibold text-white/70 mt-0.5 uppercase tracking-wide">
-                      {daysLeft === 1 ? "day" : "days"}
-                    </span>
+            <SectionHeader title="Upcoming Exam" href={ROUTES.EXAMS} linkLabel="View All" />
+            <Link href={ROUTES.EXAMS} className="block hover:opacity-95 transition-opacity">
+              <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-[var(--color-primary-700)] via-[var(--color-primary-600)] to-[var(--secondary)] shadow-lg">
+                <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10" />
+                <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-white/5" />
+                <div className="relative p-5 flex items-center gap-4">
+                  <div className="shrink-0 h-14 w-14 rounded-xl overflow-hidden bg-white/15 flex items-center justify-center backdrop-blur-sm">
+                    {examImg ? (
+                      <Image src={examImg} alt={upcomingExam.title} width={56} height={56} className="object-cover" />
+                    ) : (
+                      <Award className="h-7 w-7 text-white" />
+                    )}
                   </div>
-                )}
+                  <div className="flex-1 min-w-0">
+                    {(upcomingExam as any).category && (
+                      <span className="inline-block text-[10px] font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full mb-1.5">
+                        {(upcomingExam as any).category}
+                      </span>
+                    )}
+                    <p className="font-bold text-white text-sm leading-snug line-clamp-2">{upcomingExam.title}</p>
+                    {upcomingExam.examDate && (
+                      <p className="text-xs text-white/70 mt-1 font-medium">
+                        {new Date(upcomingExam.examDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    )}
+                  </div>
+                  {daysLeft !== null && (
+                    <div className="shrink-0 flex flex-col items-center justify-center bg-white/15 rounded-xl px-3 py-2 min-w-[52px] border border-white/20">
+                      <span className="text-xl font-black text-white leading-none">{daysLeft}</span>
+                      <span className="text-[9px] font-bold text-white/70 mt-0.5 uppercase tracking-wide">{daysLeft === 1 ? "day" : "days"}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
         );
       })()}
 
-      {/* 10. Preferred Categories */}
+      {/* 9. Preferred Categories */}
       {preferredCategories.length > 0 && (
         <div>
-          <h2 className="text-base font-bold text-[var(--foreground)] mb-3">Preferred Categories</h2>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <SectionHeader title="Preferred Categories" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
             {preferredCategories.map((cat: any) => (
               <button
                 key={cat.id}
                 onClick={() => handleCategorySelect(cat.id)}
                 disabled={updatingCategoryId === cat.id}
-                className="shrink-0 w-[100px] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] px-2 py-3 text-center hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] transition-colors disabled:opacity-50"
+                className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-2 py-3 text-center hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] transition-all disabled:opacity-50"
               >
                 <p className="text-xs font-medium text-[var(--foreground)] leading-tight line-clamp-2">
                   {cat.categoryName ?? cat.name}
@@ -532,25 +469,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 11. Grab the Deals */}
+      {/* 10. Grab the Deals */}
       {dealCourses.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-base font-bold text-[var(--foreground)]">Grab the Deals 🔥</h2>
-              {topCat?.categoryName && (
-                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{topCat.categoryName}</p>
-              )}
-            </div>
-            <Link
-              href={topCat?.categoryId ? `${ROUTES.EXPLORE}?categoryId=${topCat.categoryId}` : ROUTES.EXPLORE}
-              className="text-xs text-[var(--color-primary-600)] flex items-center gap-0.5 font-medium"
-            >
-              See All <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {dealCourses.slice(0, 8).map((c: any) => <CourseCard key={c.id} course={c} />)}
+          <SectionHeader
+            title="Grab the Deals"
+            href={topCat?.categoryId ? `${ROUTES.EXPLORE}?categoryId=${topCat.categoryId}` : ROUTES.EXPLORE}
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {dealCourses.slice(0, 10).map((c: any) => <CourseCard key={c.id} course={c} />)}
           </div>
         </div>
       )}

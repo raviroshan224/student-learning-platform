@@ -11,9 +11,10 @@ export const CoursesService = {
   categories: () =>
     client.get<any[]>('/categories'),
 
-  save: (id: string) => client.post(`/courses/${id}/save`),
-  unsave: (id: string) => client.delete(`/courses/${id}/save`),
-  savedMine: () => client.get<CourseModel[]>('/courses/saved/mine'),
+  save: (id: string) => client.post<{ isSaved: boolean }>(`/courses/${id}/save`),
+  unsave: (id: string) => client.delete<{ isSaved: boolean }>(`/courses/${id}/save`),
+  savedMyCourses: (params?: { page?: number; limit?: number; search?: string }) => 
+    client.get<{ data: CourseModel[]; meta: any }>('/courses/saved/my-courses', { params }).then(res => res.data),
 
   subjects: (courseId: string) =>
     client.get<SubjectModel[]>(`/subjects/course/${courseId}`),

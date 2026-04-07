@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, Compass, BookOpen, ClipboardList,
-  Bell, User, Radio, ChevronLeft, ChevronRight,
+  Bell, User, Radio, ChevronLeft, ChevronRight, GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui.store";
@@ -17,7 +17,8 @@ const navItems = [
   { href: ROUTES.DASHBOARD, icon: Home, label: "Home" },
   { href: ROUTES.EXPLORE, icon: Compass, label: "Explore" },
   { href: ROUTES.COURSES, icon: BookOpen, label: "Courses" },
-  { href: ROUTES.EXAMS, icon: ClipboardList, label: "Mock Tests" },
+  { href: ROUTES.TESTS, icon: ClipboardList, label: "Mock Tests" },
+  { href: ROUTES.EXAMS, icon: GraduationCap, label: "Exams" },
   { href: ROUTES.LIVE, icon: Radio, label: "Live Classes" },
   { href: ROUTES.NOTIFICATIONS, icon: Bell, label: "Notifications" },
   { href: ROUTES.PROFILE, icon: User, label: "Profile" },
@@ -38,21 +39,23 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="flex h-[var(--topbar-height)] items-center px-4 border-b border-[var(--border)]">
-        {!sidebarCollapsed && (
-          <Link href={ROUTES.DASHBOARD} className="text-xl font-bold text-[var(--color-primary-600)]">
-            {CONFIG.APP_NAME}
+      <div className="flex h-[var(--topbar-height)] items-center px-4 border-b border-[var(--border)] shrink-0">
+        {!sidebarCollapsed ? (
+          <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
+              <GraduationCap className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-base font-bold text-[var(--foreground)] leading-tight">{CONFIG.APP_NAME}</span>
           </Link>
-        )}
-        {sidebarCollapsed && (
-          <div className="mx-auto h-8 w-8 rounded-full bg-[var(--color-primary-600)] text-white flex items-center justify-center font-bold text-sm">
-            L
+        ) : (
+          <div className="mx-auto h-8 w-8 rounded-lg bg-[var(--color-primary-600)] flex items-center justify-center">
+            <GraduationCap className="h-5 w-5 text-white" />
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
@@ -60,14 +63,14 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
                 active
-                  ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                  ? "bg-[var(--color-primary-600)] text-white shadow-sm"
                   : "text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
               )}
               title={sidebarCollapsed ? label : undefined}
             >
-              <Icon className={cn("h-5 w-5 shrink-0", active && "text-[var(--color-primary-600)]")} />
+              <Icon className="h-[18px] w-[18px] shrink-0" />
               {!sidebarCollapsed && <span>{label}</span>}
             </Link>
           );
@@ -75,22 +78,24 @@ export function Sidebar() {
       </nav>
 
       {/* User + Collapse Toggle */}
-      <div className="border-t border-[var(--border)] p-3 space-y-2">
+      <div className="border-t border-[var(--border)] p-3 space-y-2 shrink-0">
         {!sidebarCollapsed && user && (
-          <div className="flex items-center gap-3 px-1 py-1">
-            <Avatar className="h-8 w-8">
+          <Link href={ROUTES.PROFILE} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-[var(--muted)] transition-colors">
+            <Avatar className="h-8 w-8 shrink-0">
               <AvatarImage src={user.avatar} />
-              <AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() ?? "ST"}</AvatarFallback>
+              <AvatarFallback className="bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-xs font-bold">
+                {user?.name?.slice(0, 2).toUpperCase() ?? "ST"}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.name}</p>
+              <p className="text-sm font-semibold truncate">{user?.name}</p>
               <p className="text-xs text-[var(--muted-foreground)] truncate">{user?.email}</p>
             </div>
-          </div>
+          </Link>
         )}
         <button
           onClick={() => collapseSidebar(!sidebarCollapsed)}
-          className="flex w-full items-center justify-center gap-2 rounded-[var(--radius)] px-3 py-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
         >
           {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span>Collapse</span></>}
         </button>

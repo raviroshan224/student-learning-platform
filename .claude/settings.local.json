@@ -14,7 +14,11 @@
       "Bash(ls:*)",
       "Bash(find \"C:\\\\Users\\\\shiwa\\\\student-learning-platform/src/app/\\(main\\)\" -type d)",
       "Bash(cmd:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:scholargyan.onecloudlab.com)",
+      "Bash(curl -s \"https://scholargyan.onecloudlab.com/docs/swagger-ui-init.js\")",
+      "Read(//tmp/**)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

@@ -12,7 +12,7 @@ const mobileNavItems = [
   { href: ROUTES.DASHBOARD, icon: Home, label: "Home" },
   { href: ROUTES.EXPLORE, icon: Compass, label: "Explore" },
   { href: ROUTES.COURSES, icon: BookOpen, label: "Courses" },
-  { href: ROUTES.EXAMS, icon: ClipboardList, label: "Test" },
+  { href: ROUTES.TESTS, icon: ClipboardList, label: "Test" },
   { href: ROUTES.PROFILE, icon: User, label: "Profile" },
 ];
 

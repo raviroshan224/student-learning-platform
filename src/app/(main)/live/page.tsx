@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants/routes";
 import { LiveService } from "@/services/api/live.service";
 import { computeLiveClassStatus } from "@/lib/utils/course";
+import { joinLiveClass } from "@/lib/liveClass";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -55,6 +57,7 @@ async function openMeeting(lc: any): Promise<void> {
 
 // ─── Session Card ─────────────────────────────────────────────────────────────
 function SessionCard({ lc }: { lc: any }) {
+  const router = useRouter();
   const [joining, setJoining] = useState(false);
   const { isJoinable, isUpcoming, hasEnded, displayStatus } = computeLiveClassStatus(lc);
   const start = resolveStart(lc);
@@ -62,44 +65,41 @@ function SessionCard({ lc }: { lc: any }) {
   const courseName = lc.courseTitle ?? lc.course?.courseTitle;
   const duration = lc.durationMinutes ?? lc.duration ?? lc.durationInMinutes;
 
-  const badgeStyle =
-    isJoinable
-      ? "bg-red-500 text-white"
-      : isUpcoming
-      ? "bg-amber-500 text-white"
-      : "bg-gray-400 text-white";
-
   async function handleJoin() {
     setJoining(true);
     try {
-      await openMeeting(lc);
+      await joinLiveClass(lc.id, router);
     } finally {
       setJoining(false);
     }
   }
 
   return (
-    <Card className="hover:shadow-sm transition-shadow">
-      <CardContent className="py-4">
+    <Card className="hover:shadow-md transition-all duration-200 border-[var(--border)] hover:border-[var(--color-primary-200)]">
+      <CardContent className="py-4 px-5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-lg)] ${
-                isJoinable ? "bg-red-50" : "bg-[var(--muted)]"
-              }`}
-            >
-              <Radio
-                className={`h-6 w-6 ${
-                  isJoinable ? "text-red-500" : "text-[var(--muted-foreground)]"
-                }`}
-              />
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isJoinable ? "bg-red-50" : isUpcoming ? "bg-[var(--color-primary-50)]" : "bg-[var(--muted)]"}`}>
+              <Radio className={`h-5 w-5 ${isJoinable ? "text-red-500" : isUpcoming ? "text-[var(--color-primary-600)]" : "text-[var(--muted-foreground)]"}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="font-semibold text-sm">{lc.title}</h3>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
-                  {isJoinable ? "LIVE" : displayStatus}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                <h3 className="font-semibold text-sm text-[var(--foreground)]">{lc.title}</h3>
+                {isJoinable && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                  </span>
+                )}
+                {isUpcoming && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]">
+                    Upcoming
+                  </span>
+                )}
+                {hasEnded && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
+                    Ended
+                  </span>
+                )}
               </div>
               {(instructor || courseName) && (
                 <p className="text-xs text-[var(--muted-foreground)]">
@@ -110,12 +110,7 @@ function SessionCard({ lc }: { lc: any }) {
                 {start && (
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {new Date(start).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    {new Date(start).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                   </span>
                 )}
                 {duration != null && (
@@ -129,32 +124,21 @@ function SessionCard({ lc }: { lc: any }) {
 
           <div className="shrink-0 flex gap-2">
             {isJoinable && (
-              <Button
-                size="sm"
-                variant="destructive"
-                className="gap-2"
-                onClick={handleJoin}
-                loading={joining}
-              >
-                <Radio className="h-3.5 w-3.5" /> Join Live
+              <Button size="sm" variant="destructive" className="gap-2 rounded-lg" onClick={handleJoin} disabled={joining}>
+                <Radio className="h-3.5 w-3.5" /> {joining ? "Joining..." : "Join Live"}
               </Button>
             )}
             {isUpcoming && (
               <Link href={ROUTES.LIVE_SESSION(lc.id)}>
-                <Button size="sm" variant="outline">View Details</Button>
+                <Button size="sm" variant="outline" className="rounded-lg">View Details</Button>
               </Link>
             )}
             {hasEnded && (lc.recordingUrl ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="gap-1"
-                onClick={() => window.open(lc.recordingUrl, "_blank", "noopener,noreferrer")}
-              >
+              <Button size="sm" variant="ghost" className="gap-1.5 rounded-lg" onClick={() => window.open(lc.recordingUrl, "_blank", "noopener,noreferrer")}>
                 <Video className="h-3.5 w-3.5" /> Recording
               </Button>
             ) : (
-              <Button size="sm" variant="ghost" disabled>Recording Soon</Button>
+              <Button size="sm" variant="ghost" disabled className="rounded-lg">Recording Soon</Button>
             ))}
           </div>
         </div>
@@ -222,30 +206,36 @@ export default function LivePage() {
       {/* Live Now */}
       {live.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <h2 className="text-base font-semibold flex items-center gap-2 text-[var(--foreground)]">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
             </span>
             Live Now
           </h2>
-          {live.map((lc) => <SessionCard key={lc.id} lc={lc} />)}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {live.map((lc) => <SessionCard key={lc.id} lc={lc} />)}
+          </div>
         </div>
       )}
 
       {/* Upcoming */}
       {upcoming.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Upcoming Sessions</h2>
-          {upcoming.map((lc) => <SessionCard key={lc.id} lc={lc} />)}
+          <h2 className="text-base font-semibold text-[var(--foreground)]">Upcoming Sessions</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {upcoming.map((lc) => <SessionCard key={lc.id} lc={lc} />)}
+          </div>
         </div>
       )}
 
       {/* Past */}
       {past.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-[var(--muted-foreground)]">Past Sessions</h2>
-          {past.map((lc) => <SessionCard key={lc.id} lc={lc} />)}
+          <h2 className="text-base font-semibold text-[var(--muted-foreground)]">Past Sessions</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {past.map((lc) => <SessionCard key={lc.id} lc={lc} />)}
+          </div>
         </div>
       )}
     </div>

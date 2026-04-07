@@ -34,3 +34,32 @@ export interface CategoryModel {
   imageUrl?: string;
   courseCount?: number;
 }
+export interface FavoriteCategory {
+  id: string;
+  categoryName: string;
+  categoryImageUrl: string;
+}
+
+export interface PreferredCategory {
+  id: string;
+  name?: string; // mapping from categoryName
+  slug?: string;
+  parentId?: string | null;
+}
+
+export interface CategoryHierarchyItem {
+  parentCategory: {
+    id: string;
+    categoryName: string;
+    categoryImageUrl: string;
+    isActive: boolean;
+  };
+  childCategories: Array<{
+    id: string;
+    categoryName: string;
+    categoryImageUrl: string;
+    isActive: boolean;
+  }>;
+}
+
+export type PreferredCategoryList = PreferredCategory[];

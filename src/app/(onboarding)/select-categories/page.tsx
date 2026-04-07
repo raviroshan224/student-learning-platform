@@ -3,61 +3,51 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
-import client from "@/services/api/client";
 import { ROUTES } from "@/lib/constants/routes";
-
-interface Category {
-  id: string;
-  name: string;
-  children?: Category[];
-}
+import { CategoriesService } from "@/services/api/categories.service";
+import { CategorySelector } from "@/components/profile/CategorySelector";
+import type { CategoryHierarchyItem } from "@/types/models/category";
 
 export default function SelectCategoriesPage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const router = useRouter();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  
+  const [categories, setCategories] = useState<CategoryHierarchyItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    client
-      .get<Category[]>("/categories/hierarchy")
-      .then((r) => {
-        const cats = r.data;
+    CategoriesService.hierarchy()
+      .then((cats) => {
         setCategories(cats);
-        if (cats.length > 0) setOpenSection(cats[0].id);
       })
-      .catch(() => toast.error("Failed to load categories"))
+      .catch((err) => {
+        console.error("Failed to load categories", err);
+        toast.error("Failed to load categories");
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  function toggleCategory(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   async function handleSubmit() {
-    if (selected.size === 0) return;
+    if (selectedIds.length === 0) {
+      toast.error("Please select at least one interest");
+      return;
+    }
+    
     setSubmitting(true);
     try {
-      await client.post("/user-preferences/favorite-categories", {
-        categoryIds: Array.from(selected),
-      });
+      await CategoriesService.favoriteSave(selectedIds);
+      
+      // Update local store state
       updateUser({
         hasSelectedCategories: true,
-        favoriteCategories: Array.from(selected),
       });
-      toast.success("Preferences saved!");
+      
+      toast.success("Welcome aboard! Preferences saved.");
       router.push(ROUTES.DASHBOARD);
     } catch (err: any) {
       toast.error(err.response?.data?.message ?? "Failed to save preferences.");
@@ -66,89 +56,55 @@ export default function SelectCategoriesPage() {
     }
   }
 
-  const firstName =
-    user?.fullName?.split(" ")[0] ?? user?.name?.split(" ")[0] ?? "there";
+  const firstName = user?.fullName?.split(" ")[0] ?? user?.name?.split(" ")[0] ?? "Friend";
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto py-10 px-4 space-y-8 animate-pulse text-[var(--foreground)]">
+        <div className="space-y-3 px-2">
+          <div className="h-9 w-48 bg-[var(--muted)] rounded-lg" />
+          <div className="h-6 w-72 bg-[var(--muted)]/60 rounded-lg" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-2xl bg-[var(--muted)]/40" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">
-          Namaste, {firstName}! 🙏
+    <div className="max-w-2xl mx-auto flex flex-col min-h-[calc(100vh-80px)] text-[var(--foreground)]">
+      <div className="pt-8 pb-10 px-4 space-y-2">
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          Namaste {firstName}! 🙏
         </h1>
-        <p className="mt-1 text-[var(--muted-foreground)]">
-          Select the categories you are interested in to personalise your learning.
+        <p className="text-lg text-[var(--muted-foreground)] font-medium">
+          Please Select the course you are interested in
         </p>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-14 rounded-[var(--radius-md)] bg-[var(--background)] animate-pulse"
-            />
-          ))}
-        </div>
-      ) : categories.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)] text-center py-8">
-          No categories available at the moment.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] overflow-hidden"
-            >
-              <button
-                onClick={() =>
-                  setOpenSection(openSection === cat.id ? null : cat.id)
-                }
-                className="flex w-full items-center justify-between px-4 py-4 text-left hover:bg-[var(--muted)] transition-colors"
-              >
-                <span className="font-medium text-[var(--foreground)]">{cat.name}</span>
-                {openSection === cat.id ? (
-                  <ChevronUp className="h-4 w-4 text-[var(--muted-foreground)]" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-[var(--muted-foreground)]" />
-                )}
-              </button>
+      <div className="flex-1 px-4 pb-24">
+        <CategorySelector 
+          categories={categories} 
+          selectedIds={selectedIds} 
+          onChange={setSelectedIds} 
+        />
+      </div>
 
-              {openSection === cat.id && cat.children && cat.children.length > 0 && (
-                <div className="px-4 pb-4 flex flex-wrap gap-2 border-t border-[var(--border)] pt-3">
-                  {cat.children.map((child) => {
-                    const isSelected = selected.has(child.id);
-                    return (
-                      <button
-                        key={child.id}
-                        onClick={() => toggleCategory(child.id)}
-                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
-                          isSelected
-                            ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                            : "bg-[var(--background)] text-[var(--foreground)] border-[var(--border)] hover:border-[var(--color-primary-400)]"
-                        }`}
-                      >
-                        {isSelected && <CheckCircle className="h-3.5 w-3.5" />}
-                        {child.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent z-10">
+        <div className="max-w-2xl mx-auto">
+          <Button
+            size="lg"
+            className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/25"
+            onClick={handleSubmit}
+            disabled={selectedIds.length === 0 || submitting}
+            loading={submitting}
+          >
+            {selectedIds.length > 0 ? `Next (${selectedIds.length} Selected)` : "Start Learning"}
+          </Button>
         </div>
-      )}
-
-      <div className="sticky bottom-4">
-        <Button
-          className="w-full"
-          onClick={handleSubmit}
-          disabled={selected.size === 0 || submitting}
-          loading={submitting}
-        >
-          Next ({selected.size} selected)
-        </Button>
       </div>
     </div>
   );
