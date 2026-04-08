@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, BookOpen, Bookmark, BookmarkCheck, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { ROUTES } from "@/lib/constants/routes";
 import { CoursesService } from "@/services/api/courses.service";
 import { resolveImageUrl, flattenToLeafCategories, getCourseBadge, normalizeHasOffer } from "@/lib/utils/course";
 import { useDebounce } from "@/hooks/useDebounce";
 import toast from "react-hot-toast";
 
-// ─── Course Card ──────────────────────────────────────────────────────────────
+// ─── Course Card ───────────────────────────────────────────────────────────────
 function CourseCard({
   course,
   onBookmark,
@@ -33,10 +32,10 @@ function CourseCard({
     : course.enrollmentCost;
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--card)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
+    <div className="relative rounded-xl overflow-hidden border border-[var(--border)] bg-white hover:border-[var(--color-primary-600)] transition-colors flex flex-col group">
       <Link href={ROUTES.COURSE_DETAIL(course.id)} className="flex-1 flex flex-col">
         {/* Thumbnail */}
-        <div className="relative bg-gradient-to-br from-[var(--color-primary-600)] to-[var(--color-primary-500)] overflow-hidden" style={{ aspectRatio: "16/9" }}>
+        <div className="relative bg-[var(--color-primary-50)] overflow-hidden" style={{ aspectRatio: "16/9" }}>
           {img ? (
             <Image
               src={img}
@@ -47,7 +46,7 @@ function CourseCard({
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-white/40" />
+              <BookOpen className="h-8 w-8 text-[var(--color-primary-600)]/20" />
             </div>
           )}
           {badge.type !== "NONE" && (
@@ -61,15 +60,15 @@ function CourseCard({
           )}
           {course.categoryName && (
             <div className="absolute bottom-2 left-2">
-              <Badge className="text-[9px] bg-black/50 text-white border-0 backdrop-blur-sm px-1.5 py-0.5">
+              <span className="text-[9px] font-semibold bg-black/50 text-white backdrop-blur-sm px-1.5 py-0.5 rounded-full">
                 {course.categoryName}
-              </Badge>
+              </span>
             </div>
           )}
         </div>
         {/* Info */}
         <div className="p-3 flex-1 flex flex-col gap-1.5">
-          <p className="text-xs font-semibold line-clamp-2 leading-snug text-[var(--foreground)] group-hover:text-[var(--color-primary-700)] transition-colors">
+          <p className="text-xs font-semibold line-clamp-2 leading-snug text-[var(--foreground)] group-hover:text-[var(--color-primary-600)] transition-colors">
             {course.courseTitle}
           </p>
           <div className="mt-auto flex items-baseline gap-1.5">
@@ -94,7 +93,7 @@ function CourseCard({
       <button
         onClick={(e) => { e.preventDefault(); onBookmark(); }}
         disabled={bookmarking}
-        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 border border-[var(--border)] flex items-center justify-center hover:bg-white transition-colors disabled:opacity-50"
         aria-label={course.isSaved ? "Unsave" : "Save"}
       >
         {course.isSaved ? (
@@ -107,12 +106,12 @@ function CourseCard({
   );
 }
 
-// ─── Skeleton Grid ────────────────────────────────────────────────────────────
+// ─── Skeleton Grid ─────────────────────────────────────────────────────────────
 function CourseGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--card)]">
+        <div key={i} className="rounded-xl overflow-hidden border border-[var(--border)] bg-white">
           <Skeleton className="w-full" style={{ aspectRatio: "16/9" }} />
           <div className="p-3 space-y-2">
             <Skeleton className="h-3 w-full" />
@@ -125,7 +124,7 @@ function CourseGridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
-// ─── Main Explore Content ─────────────────────────────────────────────────────
+// ─── Main Explore Content ──────────────────────────────────────────────────────
 function ExploreContent() {
   const searchParams = useSearchParams();
   const qc = useQueryClient();
@@ -172,7 +171,6 @@ function ExploreContent() {
     Array.isArray(p) ? p : (p?.data ?? [])
   ) ?? [];
 
-  // Intersection observer for infinite scroll (120px before bottom)
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isFetchingNextPage) return;
@@ -205,22 +203,26 @@ function ExploreContent() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold text-[var(--foreground)]">Explore Courses</h1>
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Explore Courses</h1>
+        <p className="text-sm text-[var(--muted-foreground)] mt-1">Discover the right course for your NEB journey</p>
+      </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]" />
         <input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search courses..."
-          className="w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] pl-9 pr-9 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-[var(--color-primary-400)] transition-all"
+          className="w-full rounded-xl border border-[var(--border)] bg-white pl-10 pr-9 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--color-primary-600)] transition-colors"
         />
         {searchInput && (
           <button
             onClick={() => setSearchInput("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -231,10 +233,10 @@ function ExploreContent() {
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <button
           onClick={() => setSelectedCategoryId(null)}
-          className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+          className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             !selectedCategoryId
-              ? "bg-[var(--color-primary-600)] text-white shadow-sm"
-              : "bg-[var(--color-primary-600)]/10 text-[var(--color-primary-700)]"
+              ? "bg-[var(--color-primary-600)] text-white"
+              : "bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-600)]"
           }`}
         >
           All Courses
@@ -242,37 +244,54 @@ function ExploreContent() {
         {leafCategories.map((cat) => {
           const catId = cat.categoryId ?? cat.id;
           return (
-          <button
-            key={catId}
-            onClick={() => setSelectedCategoryId(selectedCategoryId === catId ? null : catId)}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
-              selectedCategoryId === catId
-                ? "bg-[var(--color-primary-600)] text-white shadow-sm"
-                : "bg-[var(--color-primary-600)]/10 text-[var(--color-primary-700)]"
-            }`}
-          >
-            {cat.categoryName ?? cat.name}
-          </button>
+            <button
+              key={catId}
+              onClick={() => setSelectedCategoryId(selectedCategoryId === catId ? null : catId)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                selectedCategoryId === catId
+                  ? "bg-[var(--color-primary-600)] text-white"
+                  : "bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-600)]"
+              }`}
+            >
+              {cat.categoryName ?? cat.name}
+            </button>
           );
         })}
       </div>
+
+      {/* Courses count */}
+      {!isLoading && courses.length > 0 && (
+        <p className="text-sm text-[var(--muted-foreground)]">
+          Showing <span className="font-semibold text-[var(--foreground)]">{courses.length}</span> course{courses.length !== 1 ? "s" : ""}
+        </p>
+      )}
 
       {/* Grid */}
       {isLoading ? (
         <CourseGridSkeleton />
       ) : error ? (
-        <div className="py-16 text-center text-[var(--muted-foreground)]">
-          <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Failed to load courses</p>
-          <button onClick={() => refetch()} className="mt-2 text-sm text-[var(--color-primary-600)] hover:underline">
+        <div className="py-16 text-center">
+          <BookOpen className="h-12 w-12 mx-auto mb-3 text-[var(--muted-foreground)]/30" />
+          <p className="font-semibold text-[var(--foreground)]">Failed to load courses</p>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">Check your connection and try again</p>
+          <button
+            onClick={() => refetch()}
+            className="mt-4 text-sm font-medium text-[var(--color-primary-600)] hover:underline"
+          >
             Retry
           </button>
         </div>
       ) : courses.length === 0 ? (
-        <div className="py-16 text-center text-[var(--muted-foreground)]">
-          <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No courses found</p>
-          <p className="text-sm mt-1">Try a different search or category</p>
+        <div className="py-16 text-center">
+          <BookOpen className="h-12 w-12 mx-auto mb-3 text-[var(--muted-foreground)]/30" />
+          <p className="font-semibold text-[var(--foreground)]">No courses found</p>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">Try a different search or category</p>
+          <button
+            onClick={() => { setSearchInput(""); setSelectedCategoryId(null); }}
+            className="mt-4 inline-block bg-[var(--color-primary-600)] text-white text-sm font-medium rounded-lg px-4 py-2 hover:bg-[var(--color-primary-700)] transition-colors"
+          >
+            Clear Filters
+          </button>
         </div>
       ) : (
         <>
@@ -286,10 +305,9 @@ function ExploreContent() {
               />
             ))}
           </div>
-          {/* Infinite scroll trigger */}
           <div ref={loadMoreRef} className="h-1" />
           {isFetchingNextPage && (
-            <div className="flex justify-center py-4">
+            <div className="flex justify-center py-6">
               <div className="h-6 w-6 rounded-full border-2 border-[var(--color-primary-600)] border-t-transparent animate-spin" />
             </div>
           )}
@@ -303,17 +321,17 @@ export default function ExplorePage() {
   return (
     <Suspense
       fallback={
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-10 w-full" />
-          <div className="flex gap-2 overflow-hidden pb-1">
+        <div className="space-y-5">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-11 w-full rounded-xl" />
+          <div className="flex gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-8 w-24 shrink-0 rounded-full" />
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-44 rounded-[var(--radius-md)]" />
+              <Skeleton key={i} className="h-48 rounded-xl" />
             ))}
           </div>
         </div>

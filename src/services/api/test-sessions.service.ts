@@ -1,38 +1,38 @@
 import client from "./client";
 import type { ApiResponse } from "@/types/api.types";
 import type {
-  TestSession,
-  SessionQuestion,
+  TestSessionModel,
+  QuestionResponseDto,
   SessionSummary,
-  SessionResult,
+  TestAttemptResult,
   SessionSolution,
-  SessionHistoryItem,
+  TestHistoryItem,
 } from "@/types/models/exam";
 
 export const TestSessionsService = {
   // Start a new test session for an exam
   start: (examId: string) =>
-    client.post<ApiResponse<TestSession>>("/test-sessions", { examId }),
+    client.post<ApiResponse<TestSessionModel>>("/test-sessions/start", { mockTestId: examId }),
 
   // Get current session info
   getSession: (sessionId: string) =>
-    client.get<ApiResponse<TestSession>>(`/test-sessions/${sessionId}`),
+    client.get<ApiResponse<TestSessionModel>>(`/test-sessions/${sessionId}`),
 
   // Get a specific question by index
   getQuestion: (sessionId: string, index: number) =>
-    client.get<ApiResponse<SessionQuestion>>(`/test-sessions/${sessionId}/questions/${index}`),
+    client.get<ApiResponse<QuestionResponseDto>>(`/test-sessions/${sessionId}/question/${index}`),
 
   // Submit an answer for a question
-  answerQuestion: (sessionId: string, questionId: string, answer: string) =>
-    client.post<ApiResponse<null>>(`/test-sessions/${sessionId}/answer`, { questionId, answer }),
+  answerQuestion: (sessionId: string, questionIndex: number, selectedAnswer: string) =>
+    client.patch<ApiResponse<null>>(`/test-sessions/${sessionId}/answer`, { questionIndex, selectedAnswer }),
 
   // Mark/unmark a question for review
-  markForReview: (sessionId: string, questionId: string, marked: boolean) =>
-    client.post<ApiResponse<null>>(`/test-sessions/${sessionId}/mark-review`, { questionId, marked }),
+  markForReview: (sessionId: string, questionIndex: number, markForReview: boolean) =>
+    client.patch<ApiResponse<null>>(`/test-sessions/${sessionId}/mark-review`, { questionIndex, markForReview }),
 
   // Navigate to a specific question index
-  navigate: (sessionId: string, index: number) =>
-    client.post<ApiResponse<SessionQuestion>>(`/test-sessions/${sessionId}/navigate`, { index }),
+  navigate: (sessionId: string, questionIndex: number) =>
+    client.patch<ApiResponse<QuestionResponseDto>>(`/test-sessions/${sessionId}/navigate`, { questionIndex }),
 
   // Get the summary of all question statuses
   getSummary: (sessionId: string) =>
@@ -40,17 +40,17 @@ export const TestSessionsService = {
 
   // Submit the session
   submit: (sessionId: string) =>
-    client.post<ApiResponse<SessionResult>>(`/test-sessions/${sessionId}/submit`),
+    client.post<ApiResponse<TestAttemptResult>>(`/test-sessions/${sessionId}/submit`),
 
   // Get result (after submission)
   getResult: (sessionId: string) =>
-    client.get<ApiResponse<SessionResult>>(`/test-sessions/${sessionId}/result`),
+    client.get<ApiResponse<TestAttemptResult>>(`/test-sessions/${sessionId}/result`),
 
   // Get solutions with correct answers
   getSolutions: (sessionId: string) =>
     client.get<ApiResponse<SessionSolution[]>>(`/test-sessions/${sessionId}/solutions`),
 
   // Get session history for the current user
-  getHistory: (params?: { page?: number; limit?: number; examId?: string }) =>
-    client.get<ApiResponse<SessionHistoryItem[]>>("/test-sessions/history", { params }),
+  getHistory: (params?: { page?: number; limit?: number; courseId?: string }) =>
+    client.get<ApiResponse<TestHistoryItem[]>>("/test-sessions/history/me", { params }),
 };

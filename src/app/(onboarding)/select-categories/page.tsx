@@ -76,33 +76,32 @@ export default function SelectCategoriesPage() {
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col min-h-[calc(100vh-80px)] text-[var(--foreground)]">
-      <div className="pt-8 pb-10 px-4 space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">
-          Namaste {firstName}! 🙏
+      <div className="pt-8 pb-8 space-y-2">
+        <h1 className="text-2xl font-bold">
+          Welcome, {firstName}!
         </h1>
-        <p className="text-lg text-[var(--muted-foreground)] font-medium">
-          Please Select the course you are interested in
+        <p className="text-sm text-[var(--muted-foreground)]">
+          Select the subjects you are interested in to personalize your experience.
         </p>
       </div>
 
-      <div className="flex-1 px-4 pb-24">
-        <CategorySelector 
-          categories={categories} 
-          selectedIds={selectedIds} 
-          onChange={setSelectedIds} 
+      <div className="flex-1 pb-28">
+        <CategorySelector
+          categories={categories}
+          selectedIds={selectedIds}
+          onChange={setSelectedIds}
         />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent z-10">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[var(--border)] z-10">
         <div className="max-w-2xl mx-auto">
           <Button
-            size="lg"
-            className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/25"
+            className="w-full h-11 font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg"
             onClick={handleSubmit}
             disabled={selectedIds.length === 0 || submitting}
             loading={submitting}
           >
-            {selectedIds.length > 0 ? `Next (${selectedIds.length} Selected)` : "Start Learning"}
+            {selectedIds.length > 0 ? `Continue (${selectedIds.length} selected)` : "Select at least one"}
           </Button>
         </div>
       </div>

@@ -124,7 +124,7 @@ export default function TestDetailPage() {
               icon: <History className="h-4 w-4" />,
             },
           ].map((item) => (
-            <Card key={item.label} className="border-none bg-[var(--muted)]/40 shadow-none">
+            <Card key={item.label} className="border border-[var(--border)] rounded-xl bg-white shadow-none">
               <CardContent className="p-3.5 space-y-1">
                 <div className="flex items-center gap-1.5 text-[var(--muted-foreground)]">
                   {item.icon}
@@ -142,7 +142,7 @@ export default function TestDetailPage() {
         <h3 className="text-lg font-bold flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-[var(--color-primary-600)]" /> General Instructions
         </h3>
-        <Card className="border-[var(--border)] shadow-sm">
+        <Card className="border border-[var(--border)] rounded-xl shadow-none">
             <CardContent className="p-6 space-y-4">
                 {test.description && (
                     <div
@@ -212,9 +212,8 @@ export default function TestDetailPage() {
       {/* CTA Section */}
       <div className="flex flex-col gap-4 pt-4">
         {canTakeTest ? (
-          <Button 
-            className="w-full h-14 text-lg font-extrabold shadow-xl gap-2 transition-all hover:scale-[1.01]" 
-            size="lg"
+          <Button
+            className="w-full h-12 text-base font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] gap-2 rounded-lg"
             onClick={() => startMutation.mutate()}
             disabled={startMutation.isPending}
           >
@@ -222,17 +221,17 @@ export default function TestDetailPage() {
                 "Preparing Session..."
             ) : (
                 <>
-                    <PlayCircle className="h-6 w-6" /> 
+                    <PlayCircle className="h-5 w-5" />
                     {test.attempted ? "Retake Exam" : "Start Mock Test"}
                 </>
             )}
           </Button>
         ) : (
           <div className="space-y-3">
-             <Button className="w-full h-14 text-lg font-extrabold shadow-xl gap-2 transition-all hover:scale-[1.01]" size="lg">
-                <ShoppingBag className="h-6 w-6" /> Buy Test Package
+             <Button className="w-full h-12 text-base font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] gap-2 rounded-lg">
+                <ShoppingBag className="h-5 w-5" /> Buy Test Package
              </Button>
-             <p className="text-xs text-center text-[var(--color-danger)] font-bold uppercase tracking-tight">
+             <p className="text-xs text-center text-[var(--color-danger)] font-medium">
                 Maximum attempt limit reached for this session
              </p>
           </div>

@@ -4,67 +4,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Radio, Play, Clock, Users } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants/routes";
 import { EnrollmentsService } from "@/services/api/enrollments.service";
 import { LiveService } from "@/services/api/live.service";
 import { LiveClassCard } from "@/components/live/LiveClassCard";
-import { resolveImageUrl, computeLiveClassStatus, getExpiryLabel } from "@/lib/utils/course";
-import toast from "react-hot-toast";
+import { resolveImageUrl, getExpiryLabel } from "@/lib/utils/course";
 
-// ─── Circular Progress ────────────────────────────────────────────────────────
-function CircularProgress({ value }: { value: number }) {
-  const r = 22;
-  const circ = 2 * Math.PI * r;
-  const pct = Math.min(100, Math.max(0, value));
-  const dash = (pct / 100) * circ;
-  return (
-    <div className="relative h-14 w-14 shrink-0">
-      <svg className="rotate-[-90deg]" width="56" height="56">
-        <circle cx="28" cy="28" r={r} fill="none" stroke="var(--color-gray-300, #D4D9DF)" strokeWidth="5" />
-        <circle
-          cx="28" cy="28" r={r} fill="none"
-          stroke="var(--color-primary-700)"
-          strokeWidth="5"
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[10px] font-bold text-[var(--color-primary-700)]">{pct}%</span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Live Class Status Badge ──────────────────────────────────────────────────
-function LiveStatusBadge({ status }: { status: string }) {
-  if (status === "Live now") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-600)]/90 text-white text-[10px] font-semibold px-2 py-0.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-        Live now
-      </span>
-    );
-  }
-  if (status === "Starts soon") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 text-white text-[10px] font-semibold px-2 py-0.5">
-        Starts soon
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded-full bg-gray-500/80 text-white text-[10px] font-semibold px-2 py-0.5">
-      Completed
-    </span>
-  );
-}
-
-// ─── My Courses Tab ───────────────────────────────────────────────────────────
+// ─── My Courses Tab ────────────────────────────────────────────────────────────
 function MyCoursesTab() {
   const { data: enrollmentsRaw, isLoading } = useQuery({
     queryKey: ["my-enrollments"],
@@ -78,8 +27,8 @@ function MyCoursesTab() {
   if (isLoading) {
     return (
       <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-[var(--radius-md)]" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
         ))}
       </div>
     );
@@ -87,12 +36,16 @@ function MyCoursesTab() {
 
   if (enrollments.length === 0) {
     return (
-      <div className="py-20 text-center text-[var(--muted-foreground)]">
-        <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p className="font-medium">You have not enrolled in any courses yet.</p>
-        <p className="text-sm mt-1">Explore courses to get started</p>
-        <Link href={ROUTES.EXPLORE} className="mt-4 inline-block">
-          <Button size="sm">Explore Courses</Button>
+      <div className="py-20 text-center">
+        <div className="h-16 w-16 rounded-2xl bg-[var(--color-primary-50)] flex items-center justify-center mx-auto mb-4">
+          <BookOpen className="h-8 w-8 text-[var(--color-primary-600)]/40" />
+        </div>
+        <p className="font-semibold text-[var(--foreground)]">No courses enrolled yet</p>
+        <p className="text-sm text-[var(--muted-foreground)] mt-1">Start learning by enrolling in a course</p>
+        <Link href={ROUTES.EXPLORE} className="mt-5 inline-block">
+          <Button className="bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg">
+            Explore Courses
+          </Button>
         </Link>
       </div>
     );
@@ -110,18 +63,20 @@ function MyCoursesTab() {
 
         return (
           <Link key={enrollment.id} href={ROUTES.COURSE_DETAIL(course.id ?? enrollment.courseId)}>
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:shadow-md hover:border-[var(--color-primary-200)] transition-all cursor-pointer h-full group">
+            <div className="flex items-center gap-3 p-3.5 rounded-xl border border-[var(--border)] bg-white hover:border-[var(--color-primary-600)] transition-colors cursor-pointer group">
               {/* Thumbnail */}
-              <div className="h-[68px] w-[68px] shrink-0 rounded-lg overflow-hidden bg-[var(--color-primary-600)] flex items-center justify-center">
+              <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-[var(--color-primary-50)] flex items-center justify-center">
                 {img ? (
-                  <Image src={img} alt={course.courseTitle ?? "Course"} width={68} height={68} className="object-cover h-full w-full" />
+                  <Image src={img} alt={course.courseTitle ?? "Course"} width={64} height={64} className="object-cover h-full w-full" />
                 ) : (
-                  <BookOpen className="h-7 w-7 text-white" />
+                  <BookOpen className="h-7 w-7 text-[var(--color-primary-600)]/40" />
                 )}
               </div>
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm line-clamp-2 leading-snug group-hover:text-[var(--color-primary-700)] transition-colors">{course.courseTitle}</p>
+                <p className="font-semibold text-sm line-clamp-2 leading-snug group-hover:text-[var(--color-primary-600)] transition-colors">
+                  {course.courseTitle}
+                </p>
                 {enrollDate && (
                   <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
                     Enrolled: {new Date(enrollDate).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
@@ -133,11 +88,11 @@ function MyCoursesTab() {
                   </p>
                 )}
                 {pct > 0 && (
-                  <div className="mt-1.5 flex items-center gap-2">
+                  <div className="mt-2 flex items-center gap-2">
                     <div className="flex-1 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
                       <div className="h-full rounded-full bg-[var(--color-primary-600)] transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[10px] font-bold text-[var(--color-primary-700)] shrink-0">{pct}%</span>
+                    <span className="text-[10px] font-bold text-[var(--color-primary-600)] shrink-0">{pct}%</span>
                   </div>
                 )}
               </div>
@@ -149,10 +104,9 @@ function MyCoursesTab() {
   );
 }
 
-// ─── Ongoing Classes Tab ─────────────────────────────────────────────────────────
+// ─── Ongoing Classes Tab ───────────────────────────────────────────────────────
 function OngoingClassesTab() {
   const router = useRouter();
-  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   const { data: classesRaw, isLoading } = useQuery({
     queryKey: ["my-live-classes-ongoing"],
@@ -164,31 +118,11 @@ function OngoingClassesTab() {
   });
   const classes: any[] = classesRaw ?? [];
 
-  function handleJoin(lc: any) {
-    setJoiningId(lc.id);
-    router.push(`/live/${lc.id}`);
-  }
-
-  function formatSchedule(lc: any): string {
-    const start = lc.startTime ?? lc.scheduledAt;
-    const end = lc.endTime;
-    if (!start) return "";
-    const s = new Date(start);
-    const sStr = s.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-    if (!end) return sStr;
-    const e = new Date(end);
-    // Same day?
-    if (s.toDateString() === e.toDateString()) {
-      return `${sStr} – ${e.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-    }
-    return `${sStr} – ${e.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
-  }
-
   if (isLoading) {
     return (
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full rounded-[var(--radius-md)]" />
+          <Skeleton key={i} className="h-36 w-full rounded-xl" />
         ))}
       </div>
     );
@@ -196,9 +130,12 @@ function OngoingClassesTab() {
 
   if (classes.length === 0) {
     return (
-      <div className="py-20 text-center text-[var(--muted-foreground)]">
-        <Radio className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p className="font-medium">No live classes scheduled</p>
+      <div className="py-20 text-center">
+        <div className="h-16 w-16 rounded-2xl bg-[var(--color-primary-50)] flex items-center justify-center mx-auto mb-4">
+          <Radio className="h-8 w-8 text-[var(--color-primary-600)]/40" />
+        </div>
+        <p className="font-semibold text-[var(--foreground)]">No live classes scheduled</p>
+        <p className="text-sm text-[var(--muted-foreground)] mt-1">Check back later for upcoming sessions</p>
       </div>
     );
   }
@@ -212,23 +149,27 @@ function OngoingClassesTab() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page ──────────────────────────────────────────────────────────────────────
 export default function CoursesPage() {
   const [tab, setTab] = useState<0 | 1>(0);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold text-[var(--foreground)]">Courses Enrolled</h1>
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">My Courses</h1>
+        <p className="text-sm text-[var(--muted-foreground)] mt-1">Track your enrolled courses and live classes</p>
+      </div>
 
-      {/* Two-pill tab switcher */}
-      <div className="flex gap-2 p-1 rounded-[var(--radius-lg)] bg-[var(--muted)]">
+      {/* Tab switcher */}
+      <div className="flex bg-[var(--muted)] rounded-xl p-1 gap-1">
         {(["My Courses", "Ongoing Classes"] as const).map((label, i) => (
           <button
             key={i}
             onClick={() => setTab(i as 0 | 1)}
-            className={`flex-1 py-2 rounded-[var(--radius-md)] text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
               tab === i
-                ? "bg-[var(--color-primary-700)] text-white shadow-sm"
+                ? "bg-white text-[var(--color-primary-600)] shadow-sm"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >

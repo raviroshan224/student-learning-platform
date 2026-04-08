@@ -336,16 +336,18 @@ export default function QuizPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-4 pb-10">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-4 sticky top-[var(--topbar-height)] bg-[var(--background)] py-2 z-10">
-        <h1 className="font-semibold text-sm sm:text-base truncate">
+      <div className="flex items-center justify-between gap-4 sticky top-[var(--topbar-height)] bg-white border-b border-[var(--border)] py-3 px-1 z-10 -mx-1">
+        <h1 className="font-semibold text-sm sm:text-base truncate text-[var(--foreground)]">
           {sessionTitle || "Mock Test Session"}
         </h1>
         <div className="flex items-center gap-3 shrink-0">
           {timeRemaining > 0 && (
             <div
               className={cn(
-                "flex items-center gap-1.5 font-mono font-bold text-base",
-                isTimeLow ? "text-[var(--color-danger)]" : "text-[var(--foreground)]"
+                "flex items-center gap-1.5 font-mono font-bold text-base rounded-lg px-3 py-1.5 border",
+                isTimeLow
+                  ? "text-[var(--color-danger)] bg-red-50 border-red-200"
+                  : "text-[var(--foreground)] bg-[var(--muted)] border-[var(--border)]"
               )}
             >
               <Clock className={cn("h-4 w-4", isTimeLow && "animate-pulse")} />
@@ -353,7 +355,7 @@ export default function QuizPage() {
             </div>
           )}
           <Button
-            variant="destructive"
+            className="bg-[var(--color-danger)] hover:bg-red-700 text-white rounded-lg"
             size="sm"
             onClick={() => setShowConfirm(true)}
             disabled={submitting}
@@ -374,7 +376,7 @@ export default function QuizPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* ── Question card ── */}
         <div className="lg:col-span-3 space-y-4">
-          <Card className="min-h-[300px]">
+          <Card className="min-h-[300px] border-[var(--border)] rounded-xl">
             <CardContent className="pt-6 pb-6 space-y-5">
               {questionLoading || !currentQuestion ? (
                 <div className="space-y-4">
@@ -505,7 +507,7 @@ export default function QuizPage() {
               size="lg"
               onClick={() => handleNavigate(currentIndex - 1)}
               disabled={currentIndex === 0 || questionLoading || submitting}
-              className="flex-1 sm:flex-none gap-2 font-bold"
+              className="flex-1 sm:flex-none gap-2 font-semibold rounded-lg border-[var(--border)]"
             >
               <ChevronLeft className="h-5 w-5" /> Previous
             </Button>
@@ -513,7 +515,7 @@ export default function QuizPage() {
               size="lg"
               onClick={() => handleNavigate(currentIndex + 1)}
               disabled={currentIndex >= totalCount - 1 || questionLoading || submitting}
-              className="flex-1 sm:flex-none gap-2 font-bold"
+              className="flex-1 sm:flex-none gap-2 font-semibold rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
             >
               Next <ChevronRight className="h-5 w-5" />
             </Button>
@@ -522,8 +524,8 @@ export default function QuizPage() {
 
         {/* ── Sidebar ── */}
         <div className="space-y-4">
-          <div className="bg-[var(--card)] rounded-[var(--radius-lg)] border p-4 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-4">
+          <div className="bg-white rounded-xl border border-[var(--border)] p-4">
+            <h3 className="text-sm font-bold text-[var(--muted-foreground)] mb-4 uppercase tracking-wide">
               Questions
             </h3>
             <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-4 gap-2">

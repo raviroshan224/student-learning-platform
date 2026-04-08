@@ -94,8 +94,8 @@ export default function SolutionsPage() {
 
                 return (
                     <Card key={sol.questionId || idx} className={cn(
-                        "overflow-hidden border-2 transition-shadow hover:shadow-md",
-                        sol.isCorrect ? "border-[var(--color-success)]/10" : selectedKey ? "border-[var(--color-danger)]/10" : "border-[var(--border)]"
+                        "overflow-hidden border rounded-xl transition-colors",
+                        sol.isCorrect ? "border-[var(--color-success)]/30" : selectedKey ? "border-[var(--color-danger)]/20" : "border-[var(--border)]"
                     )}>
                         <CardContent className="p-0">
                             {/* Question Header */}
@@ -220,8 +220,12 @@ export default function SolutionsPage() {
       </div>
 
       <div className="flex justify-center pt-8">
-        <Button size="lg" className="rounded-full shadow-lg font-bold px-8 h-12" onClick={() => router.push(ROUTES.TESTS)}>
-            Return to Dashboard
+        <Button
+          size="lg"
+          className="bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] font-semibold px-8 h-11 rounded-lg"
+          onClick={() => router.push(ROUTES.TESTS)}
+        >
+          Return to Tests
         </Button>
       </div>
     </div>

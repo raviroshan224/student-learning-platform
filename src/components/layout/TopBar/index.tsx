@@ -24,58 +24,59 @@ export function TopBar() {
   const { unreadCount } = useNotificationStore();
 
   return (
-    <header className="sticky top-0 z-40 flex h-[var(--topbar-height)] items-center border-b border-[var(--border)] bg-[var(--card)] px-4 gap-3">
-      {/* Spacer */}
+    <header className="sticky top-0 z-40 flex h-[var(--topbar-height)] items-center border-b border-[var(--border)] bg-white px-4 gap-3">
       <div className="flex-1" />
 
       {/* Notifications */}
       <Link href={ROUTES.NOTIFICATIONS}>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-white hover:bg-[var(--muted)] transition-colors">
+          <Bell className="h-4 w-4 text-[var(--muted-foreground)]" />
           {unreadCount > 0 && (
             <span
               className={cn(
-                "absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-danger)] text-white text-[10px] font-bold",
+                "absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-danger)] text-white text-[10px] font-bold",
                 unreadCount > 9 && "w-5"
               )}
             >
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
-        </Button>
+        </button>
       </Link>
 
       {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-[var(--radius)] p-1 hover:bg-[var(--muted)] transition-colors">
-            <Avatar className="h-8 w-8">
+          <button className="flex items-center gap-2.5 rounded-lg border border-[var(--border)] px-3 py-1.5 hover:bg-[var(--muted)] transition-colors">
+            <Avatar className="h-7 w-7">
               <AvatarImage src={user?.avatar} />
-              <AvatarFallback>
-                {user?.name?.slice(0, 2).toUpperCase() ?? "ST"}
+              <AvatarFallback className="text-xs font-bold bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+                {user?.name
+                  ? user.name.split(" ").filter(Boolean).map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                  : "ST"}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden sm:block text-sm font-medium">
+            <span className="hidden sm:block text-sm font-medium text-[var(--foreground)]">
               {user?.name ?? "Student"}
             </span>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" className="w-48 bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-lg)]">
+          <DropdownMenuLabel className="text-xs text-[var(--muted-foreground)] font-normal">My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator className="bg-[var(--border)]" />
           <DropdownMenuItem asChild>
-            <Link href={ROUTES.PROFILE} className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
+            <Link href={ROUTES.PROFILE} className="cursor-pointer flex items-center gap-2 text-sm">
+              <User className="h-4 w-4" />
               Profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-[var(--border)]" />
           <DropdownMenuItem
             onClick={() => logout()}
             disabled={isLoggingOut}
-            className="text-[var(--color-danger)]"
+            className="text-[var(--color-danger)] focus:text-[var(--color-danger)] flex items-center gap-2 text-sm cursor-pointer"
           >
-            <LogOut className="mr-2 h-4 w-4" />
+            <LogOut className="h-4 w-4" />
             {isLoggingOut ? "Logging out…" : "Logout"}
           </DropdownMenuItem>
         </DropdownMenuContent>

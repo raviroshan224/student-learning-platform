@@ -8,7 +8,7 @@ import { queryKeys } from "@/services/query/keys";
 import { ROUTES } from "@/lib/constants/routes";
 import type { UpdateProfilePayload, UpdatePasswordPayload, RegisterPayload } from "@/types/models/user";
 
-export function useLogin() {
+export function useLogin(options?: { redirectTo?: string }) {
   const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
 
@@ -22,7 +22,7 @@ export function useLogin() {
       if (data.user.hasSelectedCategories === false) {
         router.push("/select-categories");
       } else {
-        router.push(ROUTES.DASHBOARD);
+        router.push(options?.redirectTo ?? ROUTES.DASHBOARD);
       }
     },
     onError: (err: any) => {

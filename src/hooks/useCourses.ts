@@ -19,7 +19,7 @@ export function useCourseDetail(id: string) {
 export function useSavedCourses() {
   return useQuery({
     queryKey: ['saved-courses'],
-    queryFn: () => CoursesService.savedMine().then((r) => r.data),
+    queryFn: () => CoursesService.savedMyCourses(),
   });
 }
 

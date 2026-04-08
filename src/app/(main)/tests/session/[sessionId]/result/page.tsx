@@ -115,37 +115,33 @@ export default function TestResultPage() {
     <div className="max-w-3xl mx-auto space-y-6 pt-4 pb-12">
       {/* Result Hero */}
       <Card
-        className={`border-2 overflow-hidden shadow-lg ${
-          passed ? "border-[var(--color-success)]/30" : "border-[var(--color-danger)]/30"
-        }`}
+        className={`overflow-hidden border ${
+          passed ? "border-[var(--color-success)]/40" : "border-[var(--color-danger)]/40"
+        } rounded-xl`}
       >
-        <div className={`h-2 ${passed ? "bg-[var(--color-success)]" : "bg-[var(--color-danger)]"}`} />
-        <CardContent className="py-10 text-center space-y-6 relative">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            {passed ? <Award className="h-32 w-32" /> : <XCircle className="h-32 w-32" />}
-          </div>
-
+        <div className={`h-1.5 ${passed ? "bg-[var(--color-success)]" : "bg-[var(--color-danger)]"}`} />
+        <CardContent className="py-10 text-center space-y-5">
           <div
-            className={`mx-auto h-24 w-24 rounded-full flex items-center justify-center shadow-inner ${
+            className={`mx-auto h-20 w-20 rounded-xl flex items-center justify-center ${
               passed ? "bg-[var(--color-success)]/10" : "bg-[var(--color-danger)]/10"
             }`}
           >
             {passed ? (
-              <Award className="h-12 w-12 text-[var(--color-success)]" />
+              <Award className="h-10 w-10 text-[var(--color-success)]" />
             ) : (
-              <XCircle className="h-12 w-12 text-[var(--color-danger)]" />
+              <XCircle className="h-10 w-10 text-[var(--color-danger)]" />
             )}
           </div>
 
           <div className="space-y-1">
             <h1
-              className={`text-3xl font-extrabold tracking-tight ${
+              className={`text-2xl font-bold ${
                 passed ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"
               }`}
             >
               {passed ? "Congratulations!" : "Don't Give Up!"}
             </h1>
-            <p className="text-[var(--muted-foreground)] font-medium">
+            <p className="text-sm text-[var(--muted-foreground)]">
               {passed
                 ? "You've successfully cleared the mock test."
                 : "You were close! Review your mistakes and try again."}
@@ -160,12 +156,13 @@ export default function TestResultPage() {
           </div>
 
           <div className="flex justify-center gap-2">
-            <Badge
-              variant={passed ? "default" : "destructive"}
-              className="px-3 py-1 text-xs uppercase tracking-wider font-bold"
+            <span
+              className={`inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                passed ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
             >
               {passed ? "PASS" : "FAIL"}
-            </Badge>
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -173,7 +170,7 @@ export default function TestResultPage() {
       {/* Primary Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {primaryStats.map((stat) => (
-          <Card key={stat.label} className="border-none bg-[var(--muted)]/30">
+          <Card key={stat.label} className="border border-[var(--border)] rounded-xl bg-white shadow-none">
             <CardContent className="py-5 px-3 text-center space-y-1.5">
               <div className="flex justify-center items-center gap-1.5 text-[var(--muted-foreground)]">
                 {stat.icon}
@@ -228,24 +225,24 @@ export default function TestResultPage() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <Link href={`/tests/session/${params.sessionId}/solutions`} className="flex-1">
-          <Button className="w-full h-12 gap-2 shadow-sm font-bold text-base" variant="secondary">
-            <BookOpen className="h-5 w-5" /> View Solutions
+          <Button className="w-full h-11 gap-2 font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg">
+            <BookOpen className="h-4 w-4" /> View Solutions
           </Button>
         </Link>
         <Link href={ROUTES.TESTS} className="flex-1">
-          <Button variant="outline" className="w-full h-12 gap-2 font-bold text-base bg-white">
-            <LayoutDashboard className="h-5 w-5" /> Back to Dashboard
+          <Button variant="outline" className="w-full h-11 gap-2 font-semibold border-[var(--border)] text-[var(--foreground)] bg-white rounded-lg hover:border-[var(--color-primary-600)] hover:text-[var(--color-primary-600)]">
+            <LayoutDashboard className="h-4 w-4" /> Back to Tests
           </Button>
         </Link>
       </div>
 
-      <div className="pt-4 flex justify-center">
+      <div className="pt-2 flex justify-center">
         <Button
           variant="ghost"
           size="sm"
-          className="text-[var(--muted-foreground)] gap-2 hover:bg-transparent"
+          className="text-[var(--muted-foreground)] gap-2 hover:text-[var(--foreground)]"
         >
           <Share2 className="h-4 w-4" /> Share Result
         </Button>

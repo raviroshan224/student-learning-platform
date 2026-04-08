@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers/AppProviders";
 
-const nunitoSans = Nunito_Sans({ subsets: ["latin"], display: "swap", weight: ["400","600","700","800"] });
+const inter = Inter({ subsets: ["latin"], display: "swap", weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
   title: {
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${nunitoSans.className} h-full`} suppressHydrationWarning>
-      <body className="min-h-full antialiased">
+    <html lang="en" className={`${inter.className} h-full`} suppressHydrationWarning>
+      <body className="min-h-full antialiased" suppressHydrationWarning>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

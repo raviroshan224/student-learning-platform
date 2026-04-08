@@ -8,8 +8,6 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 
 import { profileSchema, changePasswordSchema, type ProfileFormData, type ChangePasswordFormData } from "@/lib/validators/profile.schema";
-import { PageHeader } from "@/components/common/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +22,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProfileService } from "@/services/api/profile.service";
 import { CategoriesService } from "@/services/api/categories.service";
 import { resolveImageUrl } from "@/lib/utils/course";
+import { CategorySelector } from "@/components/profile/CategorySelector";
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -38,11 +37,11 @@ function MenuItem({ icon: Icon, label, href, onClick, danger }: MenuItemProps) {
     <div
       onClick={onClick}
       className={cn(
-        "flex items-center gap-4 px-4 py-3 hover:bg-[var(--muted)] transition-colors cursor-pointer",
+        "flex items-center gap-4 px-4 py-3.5 hover:bg-[var(--muted)] transition-colors cursor-pointer",
         danger && "text-[var(--color-danger)]"
       )}
     >
-      <Icon className="h-5 w-5 shrink-0 text-[var(--muted-foreground)]" />
+      <Icon className={cn("h-4 w-4 shrink-0", danger ? "text-[var(--color-danger)]" : "text-[var(--muted-foreground)]")} />
       <span className="flex-1 text-sm font-medium">{label}</span>
       <ChevronRight className="h-4 w-4 text-[var(--muted-foreground)]" />
     </div>
@@ -52,6 +51,16 @@ function MenuItem({ icon: Icon, label, href, onClick, danger }: MenuItemProps) {
     return <Link href={href}>{content}</Link>;
   }
   return content;
+}
+
+function FieldGroup({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-[var(--foreground)]">{label}</label>
+      {children}
+      {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
+    </div>
+  );
 }
 
 export default function ProfilePage() {
@@ -94,7 +103,7 @@ export default function ProfilePage() {
   const onSubmitProfile = async (data: ProfileFormData) => {
     try {
       await updateProfileMutation(data);
-      reset(data); // reset form so isDirty is false
+      reset(data);
     } catch (err: any) {
       if (err.response?.status === 422 && err.response?.data?.errors) {
         const e = err.response.data.errors;
@@ -139,183 +148,179 @@ export default function ProfilePage() {
         console.error("Upload failed", err);
       }
     }
-    // reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader title="Profile" />
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Profile</h1>
+        <p className="text-sm text-[var(--muted-foreground)] mt-1">Manage your account settings and preferences</p>
+      </div>
 
       {/* Profile Header */}
-      <Card>
-        <CardContent className="py-5">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="text-xl">
-                  {user?.name?.slice(0, 2).toUpperCase() ?? "ST"}
-                </AvatarFallback>
-              </Avatar>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingPicture}
-                className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-50"
-              >
-                <Camera className="h-3 w-3" />
-              </button>
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">{user?.name ?? "Student"}</h2>
-              <p className="text-sm text-[var(--muted-foreground)]">{user?.email}</p>
-              <Badge variant="secondary" className="mt-1 text-xs">Student</Badge>
-            </div>
+      <div className="bg-white border border-[var(--border)] rounded-xl p-5">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            <Avatar className="h-16 w-16 border-2 border-[var(--border)]">
+              <AvatarImage src={user?.avatar} />
+              <AvatarFallback className="bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xl font-bold">
+                {user?.name
+                  ? user.name.split(" ").filter(Boolean).map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                  : "ST"}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingPicture}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-50 border-2 border-white"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </button>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <h2 className="text-lg font-bold text-[var(--foreground)]">{user?.name ?? "Student"}</h2>
+            <p className="text-sm text-[var(--muted-foreground)]">{user?.email}</p>
+            <span className="inline-block mt-1.5 text-xs font-semibold bg-[var(--color-primary-50)] text-[var(--color-primary-600)] px-2.5 py-0.5 rounded-full">
+              Student
+            </span>
+          </div>
+        </div>
+      </div>
 
-      {/* Menu Sections */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="menu">Overview</TabsTrigger>
-          <TabsTrigger value="saved">Saved Courses</TabsTrigger>
-          <TabsTrigger value="interests">Interests</TabsTrigger>
-          <TabsTrigger value="info">Personal Info</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+        <TabsList className="bg-[var(--muted)] p-1 rounded-xl flex overflow-x-auto gap-1 w-full">
+          {[
+            { value: "menu", label: "Overview" },
+            { value: "saved", label: "Saved Courses" },
+            { value: "interests", label: "Interests" },
+            { value: "info", label: "Personal Info" },
+            { value: "security", label: "Security" },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="flex-1 rounded-lg text-sm font-medium whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-[var(--color-primary-600)] data-[state=active]:shadow-sm text-[var(--muted-foreground)]"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* Overview / Menu Tab */}
-        <TabsContent value="menu" className="mt-4 space-y-4">
+        <TabsContent value="menu" className="mt-5 space-y-4">
           {/* Learning */}
-          <Card className="overflow-hidden">
-            <div className="divide-y divide-[var(--border)]">
-              <MenuItem icon={ClipboardList} label="Exam Lists" href={ROUTES.EXAMS} />
-              <MenuItem icon={Bookmark} label="Saved Courses" onClick={() => setActiveTab("saved")} />
-              <MenuItem icon={LayoutGrid} label="Preferred Categories" onClick={() => setActiveTab("interests")} />
-            </div>
-          </Card>
+          <div className="bg-white border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)]">
+            <MenuItem icon={ClipboardList} label="Exam Lists" href={ROUTES.EXAMS} />
+            <MenuItem icon={Bookmark} label="Saved Courses" onClick={() => setActiveTab("saved")} />
+            <MenuItem icon={LayoutGrid} label="Preferred Categories" onClick={() => setActiveTab("interests")} />
+          </div>
 
-          {/* General Settings */}
+          {/* Settings */}
           <div>
-            <h3 className="text-sm font-semibold text-[var(--muted-foreground)] mb-2 px-1">General Settings</h3>
-            <Card className="overflow-hidden">
-              <div className="divide-y divide-[var(--border)]">
-                <MenuItem icon={User} label="My Profile" onClick={() => document.querySelector<HTMLButtonElement>('[value="info"]')?.click()} />
-                <MenuItem icon={LogOut} label="Logout" onClick={() => logoutMutation()} danger />
-              </div>
-            </Card>
+            <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 px-1 uppercase tracking-wide">General Settings</p>
+            <div className="bg-white border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)]">
+              <MenuItem icon={User} label="My Profile" onClick={() => document.querySelector<HTMLButtonElement>('[value="info"]')?.click()} />
+              <MenuItem icon={LogOut} label="Logout" onClick={() => logoutMutation()} danger />
+            </div>
           </div>
 
           {/* About */}
           <div>
-            <h3 className="text-sm font-semibold text-[var(--muted-foreground)] mb-2 px-1">About Us</h3>
-            <Card className="overflow-hidden">
-              <div className="divide-y divide-[var(--border)]">
-                <MenuItem icon={Info} label="About Us" href="#" />
-                <MenuItem icon={Shield} label="Terms & Conditions" href="#" />
-                <MenuItem icon={HelpCircle} label="FAQ" href="#" />
-              </div>
-            </Card>
+            <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 px-1 uppercase tracking-wide">About Us</p>
+            <div className="bg-white border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)]">
+              <MenuItem icon={Info} label="About Us" href="#" />
+              <MenuItem icon={Shield} label="Terms & Conditions" href="#" />
+              <MenuItem icon={HelpCircle} label="FAQ" href="#" />
+            </div>
           </div>
         </TabsContent>
-        {/* Saved Courses Tab */}
-        <TabsContent value="saved" className="mt-4">
+
+        {/* Saved Courses */}
+        <TabsContent value="saved" className="mt-5">
           <SavedCoursesView />
         </TabsContent>
 
-        {/* Preferred Categories (Interests) Tab */}
-        <TabsContent value="interests" className="mt-4">
+        {/* Interests */}
+        <TabsContent value="interests" className="mt-5">
           <PreferredCategoriesView />
         </TabsContent>
 
-        {/* Personal Info Tab */}
-        <TabsContent value="info" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmitProfile)} className="space-y-4 max-w-md">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Full Name</label>
-                  <Input {...register("fullName")} />
-                  {errors.fullName && <p className="text-xs text-[var(--color-danger)]">{errors.fullName.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input type="email" {...register("email")} />
-                  {errors.email && <p className="text-xs text-[var(--color-danger)]">{errors.email.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Mobile Number</label>
-                  <Input type="tel" placeholder="0000000000" {...register("mobileNumber")} />
-                  {errors.mobileNumber && <p className="text-xs text-[var(--color-danger)]">{errors.mobileNumber.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Bio (optional)</label>
-                  <textarea
-                    className="w-full min-h-[80px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                    placeholder="Tell us about yourself..."
-                    {...register("bio")}
-                  />
-                  {errors.bio && <p className="text-xs text-[var(--color-danger)]">{errors.bio.message}</p>}
-                </div>
-                <Button type="submit" loading={isUpdatingProfile} disabled={!isDirty}>
-                  Save Changes
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        {/* Personal Info */}
+        <TabsContent value="info" className="mt-5">
+          <div className="bg-white border border-[var(--border)] rounded-xl p-6">
+            <h3 className="text-base font-bold text-[var(--foreground)] mb-1">Personal Information</h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-6">Update your personal details</p>
+            <form onSubmit={handleSubmit(onSubmitProfile)} className="space-y-4 max-w-md">
+              <FieldGroup label="Full Name" error={errors.fullName?.message}>
+                <Input className="rounded-lg border-[var(--border)]" {...register("fullName")} />
+              </FieldGroup>
+              <FieldGroup label="Email address" error={errors.email?.message}>
+                <Input type="email" className="rounded-lg border-[var(--border)]" {...register("email")} />
+              </FieldGroup>
+              <FieldGroup label="Mobile Number" error={errors.mobileNumber?.message}>
+                <Input type="tel" placeholder="0000000000" className="rounded-lg border-[var(--border)]" {...register("mobileNumber")} />
+              </FieldGroup>
+              <FieldGroup label="Bio (optional)" error={errors.bio?.message}>
+                <textarea
+                  className="w-full min-h-[80px] rounded-lg border border-[var(--border)] bg-white p-3 text-sm resize-y focus:outline-none focus:border-[var(--color-primary-600)] transition-colors"
+                  placeholder="Tell us about yourself..."
+                  {...register("bio")}
+                />
+              </FieldGroup>
+              <Button
+                type="submit"
+                className="bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg"
+                loading={isUpdatingProfile}
+                disabled={!isDirty}
+              >
+                Save Changes
+              </Button>
+            </form>
+          </div>
         </TabsContent>
 
-        {/* Security Tab */}
-        <TabsContent value="security" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Change Password</CardTitle>
-              <CardDescription>Update your password to keep your account secure</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePasswordSubmit(onSubmitPassword)} className="space-y-4 max-w-md">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Old Password</label>
-                  <Input type="password" placeholder="••••••••" {...registerPassword("oldPassword")} />
-                  {passwordErrors.oldPassword && <p className="text-xs text-[var(--color-danger)]">{passwordErrors.oldPassword.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">New Password</label>
-                  <Input type="password" placeholder="••••••••" {...registerPassword("newPassword")} />
-                  {passwordErrors.newPassword && <p className="text-xs text-[var(--color-danger)]">{passwordErrors.newPassword.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Confirm New Password</label>
-                  <Input type="password" placeholder="••••••••" {...registerPassword("confirmPassword")} />
-                  {passwordErrors.confirmPassword && <p className="text-xs text-[var(--color-danger)]">{passwordErrors.confirmPassword.message}</p>}
-                </div>
-                <Button type="submit" loading={isUpdatingPassword}>
-                  Update Password
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        {/* Security */}
+        <TabsContent value="security" className="mt-5">
+          <div className="bg-white border border-[var(--border)] rounded-xl p-6">
+            <h3 className="text-base font-bold text-[var(--foreground)] mb-1">Change Password</h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-6">Keep your account secure with a strong password</p>
+            <form onSubmit={handlePasswordSubmit(onSubmitPassword)} className="space-y-4 max-w-md">
+              <FieldGroup label="Current Password" error={passwordErrors.oldPassword?.message}>
+                <Input type="password" placeholder="••••••••" className="rounded-lg border-[var(--border)]" {...registerPassword("oldPassword")} />
+              </FieldGroup>
+              <FieldGroup label="New Password" error={passwordErrors.newPassword?.message}>
+                <Input type="password" placeholder="••••••••" className="rounded-lg border-[var(--border)]" {...registerPassword("newPassword")} />
+              </FieldGroup>
+              <FieldGroup label="Confirm New Password" error={passwordErrors.confirmPassword?.message}>
+                <Input type="password" placeholder="••••••••" className="rounded-lg border-[var(--border)]" {...registerPassword("confirmPassword")} />
+              </FieldGroup>
+              <Button
+                type="submit"
+                className="bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg"
+                loading={isUpdatingPassword}
+              >
+                Update Password
+              </Button>
+            </form>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-// --- Saved Courses View ---
+// ─── Saved Courses View ────────────────────────────────────────────────────────
 function SavedCoursesView() {
   const qc = useQueryClient();
 
@@ -335,73 +340,83 @@ function SavedCoursesView() {
     onError: () => toast.error("Failed to remove course"),
   });
 
-  if (isLoading) return <div className="p-8 text-center text-sm text-[var(--muted-foreground)]">Loading saved courses...</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-24 rounded-xl bg-[var(--muted)] animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   if (!courses.length) {
     return (
-      <Card>
-        <CardContent className="p-12 text-center text-[var(--foreground)]">
-          <Bookmark className="mx-auto h-12 w-12 text-[var(--muted-foreground)]/20 mb-4" />
-          <h3 className="text-lg font-semibold mb-1">No saved courses yet</h3>
-          <p className="text-sm text-[var(--muted-foreground)] mb-6">Explore our catalog and find something you love.</p>
-          <Button asChild>
-            <Link href={ROUTES.EXPLORE}>Browse Courses</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="bg-white border border-[var(--border)] rounded-xl p-12 text-center">
+        <div className="h-16 w-16 rounded-2xl bg-[var(--color-primary-50)] flex items-center justify-center mx-auto mb-4">
+          <Bookmark className="h-8 w-8 text-[var(--color-primary-600)]/40" />
+        </div>
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-1">No saved courses yet</h3>
+        <p className="text-sm text-[var(--muted-foreground)] mb-6">Explore our catalog and save courses you like</p>
+        <Button asChild className="bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg">
+          <Link href={ROUTES.EXPLORE}>Browse Courses</Link>
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="space-y-3">
       {courses.map((course: any) => (
-        <Card key={course.id} className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex gap-4 p-3">
-              <div className="relative h-20 w-32 shrink-0 rounded-md overflow-hidden bg-[var(--muted)]">
-                {resolveImageUrl(course.thumbnail) ? (
-                  <Image
-                    src={resolveImageUrl(course.thumbnail)!}
-                    alt={course.title || "Course thumbnail"}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[var(--muted)]/50">
-                    <Book className="h-6 w-6 text-[var(--muted-foreground)]/20" />
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-1 flex-col justify-between py-0.5">
-                <div>
-                  <h4 className="text-sm font-bold line-clamp-1">{course.title}</h4>
-                  <p className="text-xs text-[var(--muted-foreground)] mt-1 line-clamp-1">{course.instructor?.fullName}</p>
+        <div key={course.id} className="bg-white border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--color-primary-600)] transition-colors">
+          <div className="flex gap-4 p-3.5">
+            <div className="relative h-20 w-32 shrink-0 rounded-lg overflow-hidden bg-[var(--muted)]">
+              {resolveImageUrl(course.thumbnail) ? (
+                <Image
+                  src={resolveImageUrl(course.thumbnail)!}
+                  alt={course.title || "Course thumbnail"}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-[var(--color-primary-50)]">
+                  <Book className="h-6 w-6 text-[var(--color-primary-600)]/30" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-[var(--color-primary-600)]">
-                    Rs {course.enrollmentCost?.toLocaleString()}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-danger)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10" onClick={() => removeSaved(course.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" asChild className="h-8 px-3 text-xs">
-                      <Link href={ROUTES.COURSE_DETAIL(course.id)}>View</Link>
-                    </Button>
-                  </div>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col justify-between py-0.5 min-w-0">
+              <div>
+                <h4 className="text-sm font-bold line-clamp-1 text-[var(--foreground)]">{course.title}</h4>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{course.instructor?.fullName}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-[var(--color-primary-600)]">
+                  Rs {course.enrollmentCost?.toLocaleString()}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => removeSaved(course.id)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] hover:bg-red-50 hover:border-red-200 text-[var(--muted-foreground)] hover:text-[var(--color-danger)] transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                  <Link
+                    href={ROUTES.COURSE_DETAIL(course.id)}
+                    className="flex items-center px-3 h-8 text-xs font-semibold rounded-lg border border-[var(--color-primary-600)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+                  >
+                    View
+                  </Link>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
-import { CategorySelector } from "@/components/profile/CategorySelector";
-
-// --- Preferred Categories View ---
+// ─── Preferred Categories View ─────────────────────────────────────────────────
 function PreferredCategoriesView() {
   const qc = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -429,53 +444,70 @@ function PreferredCategoriesView() {
 
   const selectedIds = preferred?.map(p => p.id) || [];
 
-  if (loadingPref) return <div className="p-8 text-center text-sm text-[var(--muted-foreground)]">Loading interests...</div>;
+  if (loadingPref) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-10 rounded-full bg-[var(--muted)] animate-pulse w-24 inline-block mr-2" />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <div>
-          <CardTitle className="text-base font-bold">Your Interests</CardTitle>
-          <CardDescription>Courses from these categories will be prioritized for you.</CardDescription>
-        </div>
+    <div className="bg-white border border-[var(--border)] rounded-xl p-6">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-base font-bold text-[var(--foreground)]">Your Interests</h3>
         {!isEditing ? (
-          <Button size="sm" className="h-8 gap-1.5" onClick={() => setIsEditing(true)}>
+          <Button
+            size="sm"
+            className="h-8 gap-1.5 bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] rounded-lg"
+            onClick={() => setIsEditing(true)}
+          >
             <Plus className="h-3.5 w-3.5" /> Edit
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-lg">Cancel</Button>
         )}
-      </CardHeader>
-      <CardContent>
-        {isEditing ? (
-          <div className="space-y-6">
-            <div className="max-h-[500px] overflow-y-auto px-1 -mx-1">
-              <CategorySelector 
-                categories={hierarchy || []} 
-                selectedIds={selectedIds} 
-                onChange={updateFavorites}
-              />
+      </div>
+      <p className="text-sm text-[var(--muted-foreground)] mb-5">Courses from these categories will be prioritized for you.</p>
+
+      {isEditing ? (
+        <div className="space-y-4">
+          <div className="max-h-[500px] overflow-y-auto pr-1">
+            <CategorySelector
+              categories={hierarchy || []}
+              selectedIds={selectedIds}
+              onChange={updateFavorites}
+            />
+          </div>
+          {isUpdating && <p className="text-xs text-center text-[var(--muted-foreground)] animate-pulse">Saving changes...</p>}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {preferred?.map((cat) => (
+            <span
+              key={cat.id}
+              className="inline-block bg-[var(--color-primary-50)] text-[var(--color-primary-600)] text-sm font-semibold px-3 py-1.5 rounded-full border border-[var(--color-primary-100)]"
+            >
+              {cat.categoryName}
+            </span>
+          ))}
+          {!preferred?.length && (
+            <div className="w-full text-center py-8 space-y-3">
+              <p className="text-sm text-[var(--muted-foreground)]">No preferred categories selected yet.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="border-[var(--color-primary-600)] text-[var(--color-primary-600)] rounded-lg"
+              >
+                Set Interests
+              </Button>
             </div>
-            {isUpdating && <p className="text-xs text-center text-[var(--muted-foreground)] animate-pulse">Saving changes...</p>}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2 text-[var(--foreground)]">
-            {preferred?.map((cat) => (
-              <Badge key={cat.id} variant="secondary" className="pl-3 pr-2 py-1.5 gap-1.5 font-semibold text-sm">
-                {cat.categoryName}
-              </Badge>
-            ))}
-            {!preferred?.length && (
-              <div className="w-full text-center py-6 space-y-3">
-                <p className="text-sm text-[var(--muted-foreground)] italic">No preferred categories selected yet.</p>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Set Interests</Button>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

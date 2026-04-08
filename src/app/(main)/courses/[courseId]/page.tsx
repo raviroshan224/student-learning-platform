@@ -631,24 +631,24 @@ export default function CourseDetailPage() {
   return (
     <div className="pb-28">
       {/* Header image */}
-      <div className="relative -mx-4 -mt-4 h-52 bg-gradient-to-br from-[var(--color-primary-700)] to-[var(--color-primary-500)] overflow-hidden">
+      <div className="relative -mx-4 -mt-4 h-52 bg-[var(--color-primary-600)] overflow-hidden">
         {coverImg && (
           <Image src={coverImg} alt={course.courseTitle ?? ""} fill sizes="100vw" className="object-cover" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />
         {/* Back */}
         <button
           onClick={() => router.back()}
-          className="absolute top-4 left-4 h-8 w-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white"
+          className="absolute top-4 left-4 h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         {/* Title */}
         <div className="absolute bottom-0 inset-x-0 p-4">
           {course.categoryName && (
-            <Badge className="text-[10px] bg-white/20 text-white border-0 mb-1.5 backdrop-blur-sm">
+            <span className="inline-block text-[10px] font-semibold bg-white/20 text-white px-2.5 py-0.5 rounded-full mb-2 backdrop-blur-sm">
               {course.categoryName}
-            </Badge>
+            </span>
           )}
           <h1 className="text-white font-bold text-xl leading-snug line-clamp-2">{course.courseTitle}</h1>
         </div>
@@ -737,8 +737,8 @@ export default function CourseDetailPage() {
               onClick={() => handleTabChange(i)}
               className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
                 activeTab === i
-                  ? "bg-[#1E3A5F] text-white shadow-sm"
-                  : "bg-[var(--color-primary-600)]/10 text-[var(--color-primary-700)]"
+                  ? "bg-[var(--color-primary-600)] text-white"
+                  : "bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-600)]"
               }`}
             >
               {tab}
@@ -771,7 +771,7 @@ export default function CourseDetailPage() {
 
       {/* Enroll CTA — sticky bottom */}
       {!isEnrolled && enrollCTA !== "NONE" && (
-        <div className="fixed bottom-16 inset-x-0 z-40 bg-[var(--card)] border-t border-[var(--border)] shadow-lg px-4 py-3 flex items-center gap-3 rounded-tl-2xl rounded-tr-2xl">
+        <div className="fixed bottom-16 inset-x-0 z-40 bg-white border-t border-[var(--border)] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
             <p className="text-xs text-[var(--muted-foreground)]">Enrollment Fee</p>
             {enrollCTA === "FREE_ENROLL" ? (
@@ -788,7 +788,7 @@ export default function CourseDetailPage() {
             )}
           </div>
           <Button
-            className="px-6 bg-[#2A5D9F] hover:bg-[#1E4A80]"
+            className="px-6 bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)] text-white rounded-lg"
             onClick={enrollCTA === "FREE_ENROLL" ? handleFreeEnroll : handleEsewa}
             loading={enrolling}
             disabled={enrolling}

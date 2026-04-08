@@ -4,7 +4,7 @@ import { CategoriesService } from "@/services/api/categories.service";
 export function useCategoryHierarchy() {
   return useQuery({
     queryKey: ["categories-hierarchy"],
-    queryFn: () => CategoriesService.hierarchy().then((r) => r.data),
+    queryFn: () => CategoriesService.hierarchy(),
     staleTime: 1000 * 60 * 10,
   });
 }
